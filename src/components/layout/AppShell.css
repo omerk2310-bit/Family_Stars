@@ -1,0 +1,68 @@
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+}
+
+.app-shell__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-4);
+  background: var(--child-accent, var(--color-primary));
+  color: var(--color-text-on-dark);
+  box-shadow: var(--shadow-card);
+}
+
+.app-shell__header-start,
+.app-shell__header-end {
+  min-width: 44px;
+  display: flex;
+}
+
+.app-shell__header-end {
+  justify-content: flex-end;
+}
+
+.app-shell__header-title {
+  flex: 1;
+  text-align: center;
+}
+
+.app-shell__header-title h1 {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+}
+
+.app-shell__subtitle {
+  font-size: var(--font-size-sm);
+  opacity: 0.9;
+  margin-top: var(--space-1);
+}
+
+.app-shell__icon-btn {
+  background: rgba(255, 255, 255, 0.18);
+  border: none;
+  color: inherit;
+  border-radius: var(--radius-pill);
+  width: 40px;
+  height: 40px;
+  font-size: var(--font-size-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-shell__icon-btn:active {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.app-shell__main {
+  flex: 1;
+  padding: var(--space-4);
+  padding-bottom: var(--space-6);
+  max-width: 640px;
+  width: 100%;
+  margin-inline: auto;
+}

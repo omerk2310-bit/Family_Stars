@@ -1,0 +1,67 @@
+.behavior-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  text-align: start;
+  box-shadow: var(--shadow-card);
+}
+
+.behavior-button:active:not(:disabled) {
+  border-color: var(--child-accent, var(--color-primary));
+  background: var(--color-surface-alt);
+}
+
+.behavior-button:disabled {
+  opacity: 0.5;
+}
+
+.behavior-button__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.behavior-button__title {
+  font-weight: 700;
+  font-size: var(--font-size-md);
+  color: var(--color-text);
+}
+
+.behavior-button__desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.behavior-button__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.behavior-button__points {
+  font-weight: 700;
+  color: var(--color-star-contrast);
+  white-space: nowrap;
+}
+
+.behavior-button__bonus-tag {
+  font-size: var(--font-size-sm);
+  background: var(--color-surface-alt);
+  color: var(--child-accent, var(--color-primary));
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+}

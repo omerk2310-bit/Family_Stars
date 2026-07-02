@@ -1,0 +1,46 @@
+.rewards-screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.rewards-screen__section-title {
+  font-size: var(--font-size-md);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.rewards-screen__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.rewards-screen__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  text-align: start;
+  box-shadow: var(--shadow-card);
+}
+
+.rewards-screen__item-title {
+  font-weight: 700;
+}
+
+.rewards-screen__item-desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
+}
+
+.rewards-screen__item-cost {
+  font-weight: 700;
+  color: var(--color-star-contrast);
+  white-space: nowrap;
+}

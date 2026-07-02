@@ -1,0 +1,49 @@
+:root {
+  --color-primary: #7c5cff;
+  --color-primary-dark: #6142d6;
+  --color-primary-contrast: #ffffff;
+
+  --color-star: #ffb703;
+  --color-star-contrast: #6b4a00;
+  --color-heart: #ff6b9d;
+  --color-heart-contrast: #7a0033;
+
+  --color-warning-amber-bg: #fff3e0;
+  --color-warning-amber-text: #8a5a00;
+  --color-warning-amber-border: #ffd699;
+
+  --color-success: #2e7d32;
+  --color-success-bg: #e9f7ea;
+
+  --color-surface: #ffffff;
+  --color-surface-alt: #f6f4fd;
+  --color-bg: #faf9fc;
+  --color-border: #e7e2f5;
+
+  --color-text: #2c2540;
+  --color-text-muted: #6f6785;
+  --color-text-on-dark: #ffffff;
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --radius-pill: 999px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  --font-size-sm: 0.85rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.6rem;
+  --font-size-xxl: 2.1rem;
+
+  --shadow-card: 0 2px 12px rgba(44, 37, 64, 0.08);
+  --shadow-modal: 0 12px 40px rgba(44, 37, 64, 0.25);
+
+  --child-accent: var(--color-primary);
+}

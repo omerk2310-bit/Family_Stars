@@ -1,0 +1,74 @@
+.weekly-summary-screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.weekly-summary-screen__range {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.weekly-summary-screen__section-title {
+  font-size: var(--font-size-md);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-2);
+}
+
+.weekly-summary-screen__hearts {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+}
+
+.weekly-summary-screen__muted {
+  color: var(--color-text-muted);
+}
+
+.weekly-summary-screen__red-summary {
+  background: var(--color-warning-amber-bg);
+  border: 1px solid var(--color-warning-amber-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  color: var(--color-warning-amber-text);
+}
+
+.weekly-summary-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-card);
+  border-inline-start: 4px solid;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.weekly-summary-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.weekly-summary-card__stars {
+  font-weight: 700;
+  color: var(--color-star-contrast);
+}
+
+.weekly-summary-card__label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-1);
+}
+
+.weekly-summary-card__strengths {
+  margin: 0;
+  padding-inline-start: var(--space-5);
+}
+
+.weekly-summary-card__sentence {
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  font-weight: 600;
+}

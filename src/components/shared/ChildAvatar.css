@@ -1,0 +1,26 @@
+.child-avatar {
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-card);
+}
+
+.child-avatar--sm {
+  width: 36px;
+  height: 36px;
+  font-size: 1.1rem;
+}
+
+.child-avatar--md {
+  width: 56px;
+  height: 56px;
+  font-size: 1.6rem;
+}
+
+.child-avatar--lg {
+  width: 88px;
+  height: 88px;
+  font-size: 2.6rem;
+}
