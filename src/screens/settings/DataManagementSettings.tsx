@@ -1,7 +1,8 @@
-import { useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useAppData } from "../../state/AppDataContext";
 import { validateImport } from "../../storage/exportImport";
 import { supabase } from "../../storage/supabaseClient";
+import { alreadyMigrated, migrateLocalDataToCloud } from "../../storage/migrateToCloud";
 import { ConfirmDialog } from "../../components/shared/ConfirmDialog";
 
 interface PendingImport {
@@ -15,6 +16,29 @@ export function DataManagementSettings() {
   const [pendingImport, setPendingImport] = useState<PendingImport | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [resetting, setResetting] = useState(false);
+  const [canMigrate, setCanMigrate] = useState<boolean | null>(null);
+  const [migrating, setMigrating] = useState(false);
+  const [confirmingMigration, setConfirmingMigration] = useState(false);
+
+  useEffect(() => {
+    alreadyMigrated()
+      .then((done) => setCanMigrate(!done))
+      .catch(() => setCanMigrate(false));
+  }, []);
+
+  async function handleMigrate() {
+    setMigrating(true);
+    try {
+      await migrateLocalDataToCloud();
+      setMessage("הנתונים הועלו לענן בהצלחה. אם הם לא מופיעים מיד, רעננו את הדף.");
+      setCanMigrate(false);
+    } catch {
+      setMessage("העלאת הנתונים נכשלה. נסו שוב.");
+    } finally {
+      setMigrating(false);
+      setConfirmingMigration(false);
+    }
+  }
 
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -47,6 +71,24 @@ export function DataManagementSettings() {
 
   return (
     <div className="settings-form">
+      {canMigrate && (
+        <div>
+          <p style={{ fontWeight: 700, marginBottom: 8 }}>העלאת נתונים לענן</p>
+          <button
+            type="button"
+            className="btn btn--secondary"
+            disabled={migrating}
+            onClick={() => setConfirmingMigration(true)}
+          >
+            {migrating ? "מעלה..." : "העלאת נתונים מקומיים לענן"}
+          </button>
+          <p className="settings-form__hint">
+            מעלה את הנתונים שכבר נמצאים במכשיר הזה (ילדים, התנהגויות, פרסים ועוד) לחשבון הענן המשותף. יש להריץ פעולה
+            זו פעם אחת בלבד, ממכשיר אחד בלבד.
+          </p>
+        </div>
+      )}
+
       <div>
         <p style={{ fontWeight: 700, marginBottom: 8 }}>גיבוי ושחזור</p>
         <div style={{ display: "flex", gap: 12 }}>
@@ -104,6 +146,17 @@ export function DataManagementSettings() {
             setResetting(false);
             setMessage("כל הנתונים אופסו.");
           }}
+        />
+      )}
+
+      {confirmingMigration && (
+        <ConfirmDialog
+          title="העלאת נתונים לענן"
+          message="פעולה זו מעלה את הנתונים מהמכשיר הזה לחשבון הענן המשותף. יש להריץ אותה פעם אחת בלבד — הפעלה חוזרת ממכשיר אחר עלולה לשכפל נתונים. להמשיך?"
+          confirmLabel="העלאה"
+          danger
+          onCancel={() => setConfirmingMigration(false)}
+          onConfirm={handleMigrate}
         />
       )}
     </div>
