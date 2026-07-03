@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -21,7 +22,9 @@ import type {
   StarEvent,
 } from "../types/entities";
 import { KEYS } from "../storage/keys";
-import { archiveEntity, getById, getCollection, removeEntity, upsert } from "../storage/db";
+import { supabase } from "../storage/supabaseClient";
+import { TABLE_CONFIGS, settingsFromRow, settingsToRow, type TableConfig } from "../storage/tableMap";
+import { archiveRow, getCollection, removeRow, upsertRow } from "../storage/remoteDb";
 import { initializeStorage } from "../storage/seedInit";
 import {
   applyImport,
@@ -33,27 +36,99 @@ import {
 
 initializeStorage();
 
-function useCollectionState<T extends Entity>(key: string) {
-  const [items, setItems] = useState<T[]>(() => getCollection<T>(key));
+const DEFAULT_SETTINGS: AppSettings = { dailyStarCap: 15, dailyHeartCap: 2, familyHeartTarget: 10 };
 
-  const add = useCallback((item: T) => setItems(upsert(key, item)), [key]);
-  const update = useCallback((item: T) => setItems(upsert(key, item)), [key]);
-  const remove = useCallback((id: string) => setItems(removeEntity<T>(key, id)), [key]);
-  const archive = useCallback(
-    (id: string, archived = true) => setItems(archiveEntity<T>(key, id, archived)),
+function useCollectionState<T extends Entity>(key: string) {
+  const config = TABLE_CONFIGS[key] as unknown as TableConfig<T>;
+  const [items, setItems] = useState<T[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    getCollection(config)
+      .then((data) => {
+        if (!cancelled) {
+          setItems(data);
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : String(err));
+          setLoading(false);
+        }
+      });
+
+    const channel = supabase
+      .channel(`realtime:${config.table}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: config.table },
+        (payload) => {
+          setItems((prev) => {
+            if (payload.eventType === "DELETE") {
+              const oldId = (payload.old as Record<string, unknown>).id as string;
+              return prev.filter((i) => i.id !== oldId);
+            }
+            const next = config.fromRow(payload.new as Record<string, unknown>);
+            const idx = prev.findIndex((i) => i.id === next.id);
+            if (idx === -1) return [...prev, next];
+            const copy = [...prev];
+            copy[idx] = next;
+            return copy;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, [key]);
+
+  const add = useCallback(
+    (item: T) => {
+      setItems((prev) => [...prev, item]);
+      upsertRow(config, item).catch((err) => setError(err instanceof Error ? err.message : String(err)));
+    },
     [key]
   );
+
+  const update = useCallback(
+    (item: T) => {
+      setItems((prev) => prev.map((i) => (i.id === item.id ? item : i)));
+      upsertRow(config, item).catch((err) => setError(err instanceof Error ? err.message : String(err)));
+    },
+    [key]
+  );
+
+  const remove = useCallback(
+    (id: string) => {
+      setItems((prev) => prev.filter((i) => i.id !== id));
+      removeRow(config.table, id).catch((err) => setError(err instanceof Error ? err.message : String(err)));
+    },
+    [key]
+  );
+
+  const archive = useCallback(
+    (id: string, archived = true) => {
+      setItems((prev) => prev.map((i) => (i.id === id ? { ...i, archived } : i)));
+      archiveRow(config, id, archived).catch((err) => setError(err instanceof Error ? err.message : String(err)));
+    },
+    [key]
+  );
+
   const replaceAll = useCallback((next: T[]) => setItems(next), []);
 
-  return { items, add, update, remove, archive, replaceAll };
-}
-
-function readSettings(): AppSettings {
-  const raw = localStorage.getItem(KEYS.settings);
-  return raw ? JSON.parse(raw) : { dailyStarCap: 15, dailyHeartCap: 2, familyHeartTarget: 10 };
+  return { items, loading, error, add, update, remove, archive, replaceAll };
 }
 
 interface AppDataContextValue {
+  loading: boolean;
+
   children: Child[];
   behaviors: Behavior[];
   starEvents: StarEvent[];
@@ -115,39 +190,61 @@ export function AppDataProvider({ children: reactChildren }: { children: ReactNo
   const redEventsState = useCollectionState<RedEvent>(KEYS.redEvents);
   const rewardsState = useCollectionState<Reward>(KEYS.rewards);
   const rewardRedemptionsState = useCollectionState<RewardRedemption>(KEYS.rewardRedemptions);
-  const [settings, setSettings] = useState<AppSettings>(readSettings);
+
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [settingsLoading, setSettingsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from("app_settings")
+      .select("*")
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (!error && data) setSettings(settingsFromRow(data));
+        setSettingsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const reorderChildren = useCallback(
     (orderedIds: string[]) => {
-      const reordered = orderedIds
-        .map((id, index) => {
-          const child = getById<Child>(KEYS.children, id);
-          return child ? { ...child, order: index } : undefined;
-        })
-        .filter((c): c is Child => Boolean(c));
-      reordered.forEach((c) => upsert(KEYS.children, c));
-      childrenState.replaceAll(getCollection<Child>(KEYS.children));
+      const orderById = new Map(orderedIds.map((id, index) => [id, index]));
+      const next = childrenState.items.map((c) =>
+        orderById.has(c.id) ? { ...c, order: orderById.get(c.id)! } : c
+      );
+      childrenState.replaceAll(next);
+      next
+        .filter((c) => orderById.has(c.id))
+        .forEach((c) => {
+          upsertRow(TABLE_CONFIGS[KEYS.children] as unknown as TableConfig<Child>, c).catch(() => undefined);
+        });
     },
     [childrenState]
   );
 
   const reorderRewards = useCallback(
     (orderedIds: string[]) => {
-      const reordered = orderedIds
-        .map((id, index) => {
-          const reward = getById<Reward>(KEYS.rewards, id);
-          return reward ? { ...reward, order: index } : undefined;
-        })
-        .filter((r): r is Reward => Boolean(r));
-      reordered.forEach((r) => upsert(KEYS.rewards, r));
-      rewardsState.replaceAll(getCollection<Reward>(KEYS.rewards));
+      const orderById = new Map(orderedIds.map((id, index) => [id, index]));
+      const next = rewardsState.items.map((r) =>
+        orderById.has(r.id) ? { ...r, order: orderById.get(r.id)! } : r
+      );
+      rewardsState.replaceAll(next);
+      next
+        .filter((r) => orderById.has(r.id))
+        .forEach((r) => {
+          upsertRow(TABLE_CONFIGS[KEYS.rewards] as unknown as TableConfig<Reward>, r).catch(() => undefined);
+        });
     },
     [rewardsState]
   );
 
   const linkRepairToRedEvent = useCallback(
     (redEventId: string, starEventId: string) => {
-      const event = getById<RedEvent>(KEYS.redEvents, redEventId);
+      const event = redEventsState.items.find((e) => e.id === redEventId);
       if (!event) return;
       redEventsState.update({ ...event, wasRepaired: true, repairStarEventId: starEventId });
     },
@@ -155,71 +252,47 @@ export function AppDataProvider({ children: reactChildren }: { children: ReactNo
   );
 
   const updateSettings = useCallback((next: AppSettings) => {
-    localStorage.setItem(KEYS.settings, JSON.stringify(next));
     setSettings(next);
+    supabase
+      .from("app_settings")
+      .upsert(settingsToRow(next), { onConflict: "user_id" })
+      .then(() => undefined);
   }, []);
 
+  // exportData/importData/resetAllData still operate on the legacy localStorage
+  // snapshot (not the live Supabase-backed data shown on screen) until Phase F
+  // repoints them at Supabase — buildExport()/applyImport() are reused as-is
+  // there as the migration payload shape.
   const exportData = useCallback(() => downloadExport(), []);
 
   const importData = useCallback((json: unknown) => {
     const result = validateImport(json);
-    if (result.valid) {
-      applyImport(json as AppDataExport);
-      childrenState.replaceAll(getCollection<Child>(KEYS.children));
-      behaviorsState.replaceAll(getCollection<Behavior>(KEYS.behaviors));
-      starEventsState.replaceAll(getCollection<StarEvent>(KEYS.starEvents));
-      starAdjustmentsState.replaceAll(getCollection<StarAdjustment>(KEYS.starAdjustments));
-      heartEventTypesState.replaceAll(getCollection<HeartEventType>(KEYS.heartEventTypes));
-      heartEventsState.replaceAll(getCollection<HeartEvent>(KEYS.heartEvents));
-      redEventTypesState.replaceAll(getCollection<RedEventType>(KEYS.redEventTypes));
-      redEventsState.replaceAll(getCollection<RedEvent>(KEYS.redEvents));
-      rewardsState.replaceAll(getCollection<Reward>(KEYS.rewards));
-      rewardRedemptionsState.replaceAll(getCollection<RewardRedemption>(KEYS.rewardRedemptions));
-      setSettings(readSettings());
-    }
+    if (result.valid) applyImport(json as AppDataExport);
     return result;
-  }, [
-    childrenState,
-    behaviorsState,
-    starEventsState,
-    starAdjustmentsState,
-    heartEventTypesState,
-    heartEventsState,
-    redEventTypesState,
-    redEventsState,
-    rewardsState,
-    rewardRedemptionsState,
-  ]);
+  }, []);
 
   const resetAllData = useCallback(() => {
     resetAllDataStorage();
     initializeStorage();
-    childrenState.replaceAll(getCollection<Child>(KEYS.children));
-    behaviorsState.replaceAll(getCollection<Behavior>(KEYS.behaviors));
-    starEventsState.replaceAll(getCollection<StarEvent>(KEYS.starEvents));
-    starAdjustmentsState.replaceAll(getCollection<StarAdjustment>(KEYS.starAdjustments));
-    heartEventTypesState.replaceAll(getCollection<HeartEventType>(KEYS.heartEventTypes));
-    heartEventsState.replaceAll(getCollection<HeartEvent>(KEYS.heartEvents));
-    redEventTypesState.replaceAll(getCollection<RedEventType>(KEYS.redEventTypes));
-    redEventsState.replaceAll(getCollection<RedEvent>(KEYS.redEvents));
-    rewardsState.replaceAll(getCollection<Reward>(KEYS.rewards));
-    rewardRedemptionsState.replaceAll(getCollection<RewardRedemption>(KEYS.rewardRedemptions));
-    setSettings(readSettings());
-  }, [
-    childrenState,
-    behaviorsState,
-    starEventsState,
-    starAdjustmentsState,
-    heartEventTypesState,
-    heartEventsState,
-    redEventTypesState,
-    redEventsState,
-    rewardsState,
-    rewardRedemptionsState,
-  ]);
+  }, []);
+
+  const loading =
+    childrenState.loading ||
+    behaviorsState.loading ||
+    starEventsState.loading ||
+    starAdjustmentsState.loading ||
+    heartEventTypesState.loading ||
+    heartEventsState.loading ||
+    redEventTypesState.loading ||
+    redEventsState.loading ||
+    rewardsState.loading ||
+    rewardRedemptionsState.loading ||
+    settingsLoading;
 
   const value = useMemo<AppDataContextValue>(
     () => ({
+      loading,
+
       children: childrenState.items,
       behaviors: behaviorsState.items,
       starEvents: starEventsState.items,
@@ -268,6 +341,7 @@ export function AppDataProvider({ children: reactChildren }: { children: ReactNo
       resetAllData,
     }),
     [
+      loading,
       childrenState,
       behaviorsState,
       starEventsState,
@@ -297,3 +371,5 @@ export function useAppData(): AppDataContextValue {
   if (!ctx) throw new Error("useAppData must be used within AppDataProvider");
   return ctx;
 }
+
+export type { AppDataExport };

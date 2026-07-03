@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AppDataProvider } from "./state/AppDataContext";
+import { useSession } from "./state/useSession";
 import type { Route } from "./types/routes";
 import { HomeScreen } from "./screens/HomeScreen";
 import { ChildScreen } from "./screens/ChildScreen";
@@ -8,6 +9,7 @@ import { RedEventsScreen } from "./screens/RedEventsScreen";
 import { RewardsScreen } from "./screens/RewardsScreen";
 import { WeeklySummaryScreen } from "./screens/WeeklySummaryScreen";
 import { SettingsScreen } from "./screens/settings/SettingsScreen";
+import { AuthScreen } from "./screens/AuthScreen";
 import { AppShell } from "./components/layout/AppShell";
 
 function Router() {
@@ -38,6 +40,20 @@ function Router() {
 }
 
 export default function App() {
+  const { session, loading } = useSession();
+
+  if (loading) {
+    return (
+      <AppShell title="כוחות הבית">
+        <p>טוען...</p>
+      </AppShell>
+    );
+  }
+
+  if (!session) {
+    return <AuthScreen />;
+  }
+
   return (
     <AppDataProvider>
       <Router />

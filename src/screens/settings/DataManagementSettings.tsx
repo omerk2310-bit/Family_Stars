@@ -1,6 +1,7 @@
 import { useRef, useState, type ChangeEvent } from "react";
 import { useAppData } from "../../state/AppDataContext";
 import { validateImport } from "../../storage/exportImport";
+import { supabase } from "../../storage/supabaseClient";
 import { ConfirmDialog } from "../../components/shared/ConfirmDialog";
 
 interface PendingImport {
@@ -66,6 +67,13 @@ export function DataManagementSettings() {
         <p style={{ fontWeight: 700, marginBottom: 8 }}>איפוס</p>
         <button type="button" className="btn btn--danger" onClick={() => setResetting(true)}>
           איפוס כל הנתונים
+        </button>
+      </div>
+
+      <div>
+        <p style={{ fontWeight: 700, marginBottom: 8 }}>חשבון</p>
+        <button type="button" className="btn btn--secondary" onClick={() => supabase.auth.signOut()}>
+          התנתקות
         </button>
       </div>
 
