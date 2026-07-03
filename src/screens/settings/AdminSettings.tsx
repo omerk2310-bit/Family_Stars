@@ -15,42 +15,44 @@ function digitsOnly(value: string): string {
   return value.replace(/\D/g, "").slice(0, PIN_LENGTH);
 }
 
-export function AdminSettings() {
+interface AdminSettingsProps {
+  onLock: () => void;
+}
+
+export function AdminSettings({ onLock }: AdminSettingsProps) {
   const { children, starAdjustments, settings, updateSettings, addStarAdjustment } = useAppData();
-  const [unlocked, setUnlocked] = useState(false);
+  const [changingPin, setChangingPin] = useState(false);
 
   const activeChildren = getActiveChildren(children);
   const recentAdjustments = [...starAdjustments]
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .slice(0, 10);
 
-  if (!settings.adminPin) {
-    return (
-      <SetupPinForm
-        onSaved={(pin) => {
-          updateSettings({ ...settings, adminPin: pin });
-          setUnlocked(true);
-        }}
-      />
-    );
-  }
-
-  if (!unlocked) {
-    return <UnlockForm expectedPin={settings.adminPin} onUnlock={() => setUnlocked(true)} />;
-  }
-
   return (
     <div className="settings-form">
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-2)" }}>
         <button
           type="button"
           className="btn btn--secondary"
           style={{ width: "auto" }}
-          onClick={() => setUnlocked(false)}
+          onClick={() => setChangingPin((v) => !v)}
         >
-          🔒 נעילה
+          {changingPin ? "ביטול" : "שינוי קוד"}
+        </button>
+        <button type="button" className="btn btn--secondary" style={{ width: "auto" }} onClick={onLock}>
+          🔒 נעילת ההגדרות
         </button>
       </div>
+
+      {changingPin && (
+        <ChangePinForm
+          currentPin={settings.adminPin ?? ""}
+          onSaved={(pin) => {
+            updateSettings({ ...settings, adminPin: pin });
+            setChangingPin(false);
+          }}
+        />
+      )}
 
       <AdjustmentTool
         children={activeChildren}
@@ -90,7 +92,7 @@ export function AdminSettings() {
   );
 }
 
-function SetupPinForm({ onSaved }: { onSaved: (pin: string) => void }) {
+export function SetupPinForm({ onSaved }: { onSaved: (pin: string) => void }) {
   const [pin, setPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -111,7 +113,8 @@ function SetupPinForm({ onSaved }: { onSaved: (pin: string) => void }) {
   return (
     <div className="settings-form">
       <p className="settings-form__hint">
-        הגדירו קוד בן 4 ספרות לגישה לאזור הניהול. שמרו אותו במקום בטוח — אין דרך לשחזר אותו מתוך האפליקציה.
+        זו הכניסה הראשונה להגדרות. הגדירו קוד בן 4 ספרות שיידרש בכל כניסה להגדרות האפליקציה. שמרו אותו במקום בטוח —
+        אין דרך לשחזר אותו מתוך האפליקציה, אבל אפשר לשנות אותו מאוחר יותר בלשונית "עריכת כוכבים".
       </p>
       <div className="form-field">
         <label htmlFor="admin-pin-new">קוד חדש</label>
@@ -143,7 +146,73 @@ function SetupPinForm({ onSaved }: { onSaved: (pin: string) => void }) {
   );
 }
 
-function UnlockForm({ expectedPin, onUnlock }: { expectedPin: string; onUnlock: () => void }) {
+function ChangePinForm({ currentPin, onSaved }: { currentPin: string; onSaved: (pin: string) => void }) {
+  const [oldPin, setOldPin] = useState("");
+  const [newPin, setNewPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  function handleSave() {
+    if (oldPin !== currentPin) {
+      setError("הקוד הנוכחי שגוי.");
+      return;
+    }
+    if (!isValidPin(newPin)) {
+      setError("הקוד החדש חייב להיות בדיוק 4 ספרות.");
+      return;
+    }
+    if (newPin !== confirmPin) {
+      setError("הקודים החדשים לא תואמים.");
+      return;
+    }
+    setError(null);
+    onSaved(newPin);
+  }
+
+  return (
+    <div className="settings-form">
+      <div className="form-field">
+        <label htmlFor="admin-pin-old">קוד נוכחי</label>
+        <input
+          id="admin-pin-old"
+          type="password"
+          inputMode="numeric"
+          maxLength={PIN_LENGTH}
+          value={oldPin}
+          onChange={(e) => setOldPin(digitsOnly(e.target.value))}
+        />
+      </div>
+      <div className="form-field">
+        <label htmlFor="admin-pin-change-new">קוד חדש</label>
+        <input
+          id="admin-pin-change-new"
+          type="password"
+          inputMode="numeric"
+          maxLength={PIN_LENGTH}
+          value={newPin}
+          onChange={(e) => setNewPin(digitsOnly(e.target.value))}
+        />
+      </div>
+      <div className="form-field">
+        <label htmlFor="admin-pin-change-confirm">אימות קוד חדש</label>
+        <input
+          id="admin-pin-change-confirm"
+          type="password"
+          inputMode="numeric"
+          maxLength={PIN_LENGTH}
+          value={confirmPin}
+          onChange={(e) => setConfirmPin(digitsOnly(e.target.value))}
+        />
+      </div>
+      {error && <p className="redeem-reward__warning">{error}</p>}
+      <button type="button" className="btn btn--primary" onClick={handleSave}>
+        עדכון קוד
+      </button>
+    </div>
+  );
+}
+
+export function UnlockForm({ expectedPin, onUnlock }: { expectedPin: string; onUnlock: () => void }) {
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -159,7 +228,7 @@ function UnlockForm({ expectedPin, onUnlock }: { expectedPin: string; onUnlock: 
 
   return (
     <div className="settings-form">
-      <p className="settings-form__hint">אזור זה מיועד להורים בלבד. הזינו את קוד הניהול כדי להמשיך.</p>
+      <p className="settings-form__hint">אזור ההגדרות מיועד להורים בלבד. הזינו את קוד הניהול כדי להמשיך.</p>
       <div className="form-field">
         <label htmlFor="admin-pin-unlock">קוד ניהול</label>
         <input
