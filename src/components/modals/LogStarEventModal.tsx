@@ -12,14 +12,23 @@ interface LogStarEventModalProps {
 export function LogStarEventModal({ behavior, onConfirm, onClose }: LogStarEventModalProps) {
   const defaultPoints = behavior.isBonus ? behavior.minPoints ?? behavior.points : behavior.points;
   const [points, setPoints] = useState(defaultPoints);
+  const [half, setHalf] = useState(false);
   const [note, setNote] = useState("");
+
+  const fullPoints = behavior.points;
+  const halfPoints = Math.round(behavior.points / 2);
+  const effectivePoints = behavior.isBonus ? points : half ? halfPoints : fullPoints;
 
   return (
     <Modal
       title={behavior.title}
       onClose={onClose}
       footer={
-        <button type="button" className="btn btn--primary" onClick={() => onConfirm(points, note.trim() || undefined)}>
+        <button
+          type="button"
+          className="btn btn--primary"
+          onClick={() => onConfirm(effectivePoints, note.trim() || undefined)}
+        >
           להוסיף כוכבים
         </button>
       }
@@ -39,7 +48,22 @@ export function LogStarEventModal({ behavior, onConfirm, onClose }: LogStarEvent
       ) : (
         <div className="form-field">
           <label>ניקוד</label>
-          <p>⭐ {points}</p>
+          <div className="btn-row">
+            <button
+              type="button"
+              className={`btn ${!half ? "btn--primary" : "btn--secondary"}`}
+              onClick={() => setHalf(false)}
+            >
+              מלא ({fullPoints})
+            </button>
+            <button
+              type="button"
+              className={`btn ${half ? "btn--primary" : "btn--secondary"}`}
+              onClick={() => setHalf(true)}
+            >
+              חצי ({halfPoints})
+            </button>
+          </div>
         </div>
       )}
 

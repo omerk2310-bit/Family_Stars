@@ -31,6 +31,14 @@ export interface StarEvent {
   createdAt: string;
 }
 
+export interface StarAdjustment {
+  id: string;
+  childId: string;
+  delta: number;
+  note?: string;
+  createdAt: string;
+}
+
 export interface HeartEventType {
   id: string;
   title: string;
@@ -88,6 +96,7 @@ export interface AppSettings {
   dailyStarCap: number;
   dailyHeartCap: number;
   familyHeartTarget: number;
+  adminPin?: string;
 }
 
 export interface Entity {

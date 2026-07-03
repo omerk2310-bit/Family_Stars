@@ -21,7 +21,7 @@ interface HomeScreenProps {
 }
 
 export function HomeScreen({ navigate }: HomeScreenProps) {
-  const { children, starEvents, heartEvents, rewardRedemptions, rewards, settings } = useAppData();
+  const { children, starEvents, starAdjustments, heartEvents, rewardRedemptions, rewards, settings } = useAppData();
   const today = useToday();
   const [pickingChildFor, setPickingChildFor] = useState<"stars" | null>(null);
 
@@ -88,7 +88,13 @@ export function HomeScreen({ navigate }: HomeScreenProps) {
               <ChildCard
                 key={child.id}
                 child={child}
-                availableStars={getAvailableStarsForChild(child.id, starEvents, rewardRedemptions, rewards)}
+                availableStars={getAvailableStarsForChild(
+                  child.id,
+                  starEvents,
+                  starAdjustments,
+                  rewardRedemptions,
+                  rewards
+                )}
                 todayStars={getTodayStarsForChild(child.id, starEvents, today)}
                 dailyCap={settings.dailyStarCap}
                 onClick={() => navigate({ screen: "child", childId: child.id })}

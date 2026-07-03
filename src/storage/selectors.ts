@@ -7,6 +7,7 @@ import type {
   RedEventType,
   Reward,
   RewardRedemption,
+  StarAdjustment,
   StarEvent,
 } from "../types/entities";
 import { getWeekRange, isSameLocalDay, isWithinRange } from "../utils/dateRange";
@@ -23,17 +24,26 @@ export function getTodayStarsForChild(childId: string, starEvents: StarEvent[], 
     .reduce((sum, e) => sum + e.pointsAwarded, 0);
 }
 
-export function getLifetimeXpForChild(childId: string, starEvents: StarEvent[]): number {
-  return starEvents.filter((e) => e.childId === childId).reduce((sum, e) => sum + e.pointsAwarded, 0);
+export function getLifetimeXpForChild(
+  childId: string,
+  starEvents: StarEvent[],
+  starAdjustments: StarAdjustment[]
+): number {
+  const fromEvents = starEvents.filter((e) => e.childId === childId).reduce((sum, e) => sum + e.pointsAwarded, 0);
+  const fromAdjustments = starAdjustments
+    .filter((a) => a.childId === childId)
+    .reduce((sum, a) => sum + a.delta, 0);
+  return fromEvents + fromAdjustments;
 }
 
 export function getAvailableStarsForChild(
   childId: string,
   starEvents: StarEvent[],
+  starAdjustments: StarAdjustment[],
   rewardRedemptions: RewardRedemption[],
   rewards: Reward[]
 ): number {
-  const earned = getLifetimeXpForChild(childId, starEvents);
+  const earned = getLifetimeXpForChild(childId, starEvents, starAdjustments);
   const spent = rewardRedemptions
     .filter((r) => r.childId === childId)
     .reduce((sum, r) => {

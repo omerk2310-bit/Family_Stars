@@ -10,6 +10,7 @@ import type {
   RedEventType,
   Reward,
   RewardRedemption,
+  StarAdjustment,
   StarEvent,
 } from "../types/entities";
 
@@ -20,6 +21,7 @@ export interface AppDataExport {
     children: Child[];
     behaviors: Behavior[];
     starEvents: StarEvent[];
+    starAdjustments: StarAdjustment[];
     heartEventTypes: HeartEventType[];
     heartEvents: HeartEvent[];
     redEventTypes: RedEventType[];
@@ -43,6 +45,7 @@ export function buildExport(): AppDataExport {
       children: getCollection<Child>(KEYS.children),
       behaviors: getCollection<Behavior>(KEYS.behaviors),
       starEvents: getCollection<StarEvent>(KEYS.starEvents),
+      starAdjustments: getCollection<StarAdjustment>(KEYS.starAdjustments),
       heartEventTypes: getCollection<HeartEventType>(KEYS.heartEventTypes),
       heartEvents: getCollection<HeartEvent>(KEYS.heartEvents),
       redEventTypes: getCollection<RedEventType>(KEYS.redEventTypes),
@@ -70,6 +73,7 @@ const REQUIRED_COLLECTION_KEYS = [
   "children",
   "behaviors",
   "starEvents",
+  "starAdjustments",
   "heartEventTypes",
   "heartEvents",
   "redEventTypes",
@@ -82,6 +86,7 @@ const REQUIRED_FIELDS: Record<(typeof REQUIRED_COLLECTION_KEYS)[number], string[
   children: ["id", "name", "displayName", "color", "icon", "order", "createdAt"],
   behaviors: ["id", "childId", "title", "points", "category", "isBonus"],
   starEvents: ["id", "childId", "behaviorId", "pointsAwarded", "createdAt"],
+  starAdjustments: ["id", "childId", "delta", "createdAt"],
   heartEventTypes: ["id", "title", "hearts"],
   heartEvents: ["id", "heartEventTypeId", "heartsAwarded", "createdAt"],
   redEventTypes: ["id", "label"],
@@ -165,6 +170,7 @@ export function applyImport(json: AppDataExport): void {
   saveCollection(KEYS.children, data.children);
   saveCollection(KEYS.behaviors, data.behaviors);
   saveCollection(KEYS.starEvents, data.starEvents);
+  saveCollection(KEYS.starAdjustments, data.starAdjustments);
   saveCollection(KEYS.heartEventTypes, data.heartEventTypes);
   saveCollection(KEYS.heartEvents, data.heartEvents);
   saveCollection(KEYS.redEventTypes, data.redEventTypes);

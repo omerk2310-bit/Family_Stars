@@ -2,6 +2,7 @@ export const KEYS = {
   children: "hp.children",
   behaviors: "hp.behaviors",
   starEvents: "hp.starEvents",
+  starAdjustments: "hp.starAdjustments",
   heartEventTypes: "hp.heartEventTypes",
   heartEvents: "hp.heartEvents",
   redEventTypes: "hp.redEventTypes",

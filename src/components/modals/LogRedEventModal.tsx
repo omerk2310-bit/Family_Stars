@@ -29,6 +29,7 @@ export function LogRedEventModal({ children, redEventTypes, behaviors, onConfirm
   const [wasRepaired, setWasRepaired] = useState(false);
   const [repairBehaviorId, setRepairBehaviorId] = useState("");
   const [repairPoints, setRepairPoints] = useState(0);
+  const [repairHalf, setRepairHalf] = useState(false);
 
   const selectedChildId = childValue && childValue !== GENERAL_CHILD_VALUE ? childValue : undefined;
 
@@ -47,6 +48,14 @@ export function LogRedEventModal({ children, redEventTypes, behaviors, onConfirm
 
   const selectedRepairBehavior = repairBehaviors.find((b) => b.id === repairBehaviorId);
 
+  const effectiveRepairPoints = selectedRepairBehavior
+    ? selectedRepairBehavior.isBonus
+      ? repairPoints
+      : repairHalf
+        ? Math.round(selectedRepairBehavior.points / 2)
+        : selectedRepairBehavior.points
+    : 0;
+
   function handleChildChange(value: string) {
     setChildValue(value);
     setTypeId("");
@@ -56,6 +65,7 @@ export function LogRedEventModal({ children, redEventTypes, behaviors, onConfirm
 
   function handleRepairBehaviorChange(id: string) {
     setRepairBehaviorId(id);
+    setRepairHalf(false);
     const behavior = repairBehaviors.find((b) => b.id === id);
     if (behavior) {
       setRepairPoints(behavior.isBonus ? behavior.minPoints ?? behavior.points : behavior.points);
@@ -71,7 +81,7 @@ export function LogRedEventModal({ children, redEventTypes, behaviors, onConfirm
       note: note.trim() || undefined,
       wasRepaired,
       repairBehaviorId: wasRepaired ? repairBehaviorId : undefined,
-      repairPoints: wasRepaired ? repairPoints : undefined,
+      repairPoints: wasRepaired ? effectiveRepairPoints : undefined,
     });
   }
 
@@ -155,6 +165,28 @@ export function LogRedEventModal({ children, redEventTypes, behaviors, onConfirm
                 max={selectedRepairBehavior.maxPoints ?? selectedRepairBehavior.minPoints ?? 1}
                 onChange={setRepairPoints}
               />
+            </div>
+          )}
+
+          {selectedRepairBehavior && !selectedRepairBehavior.isBonus && (
+            <div className="form-field">
+              <label>ניקוד</label>
+              <div className="btn-row">
+                <button
+                  type="button"
+                  className={`btn ${!repairHalf ? "btn--primary" : "btn--secondary"}`}
+                  onClick={() => setRepairHalf(false)}
+                >
+                  מלא ({selectedRepairBehavior.points})
+                </button>
+                <button
+                  type="button"
+                  className={`btn ${repairHalf ? "btn--primary" : "btn--secondary"}`}
+                  onClick={() => setRepairHalf(true)}
+                >
+                  חצי ({Math.round(selectedRepairBehavior.points / 2)})
+                </button>
+              </div>
             </div>
           )}
         </div>
