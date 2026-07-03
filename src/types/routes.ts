@@ -5,7 +5,8 @@ export type SettingsTab =
   | "redTypes"
   | "rewards"
   | "global"
-  | "data";
+  | "data"
+  | "admin";
 
 export type Route =
   | { screen: "home" }

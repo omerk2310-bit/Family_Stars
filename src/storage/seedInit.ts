@@ -18,6 +18,7 @@ export function initializeStorage(): void {
   seedIfEmpty(KEYS.children, seedChildren);
   seedIfEmpty(KEYS.behaviors, seedBehaviors);
   seedIfEmpty(KEYS.starEvents, []);
+  seedIfEmpty(KEYS.starAdjustments, []);
   seedIfEmpty(KEYS.heartEventTypes, seedHeartEventTypes);
   seedIfEmpty(KEYS.heartEvents, []);
   seedIfEmpty(KEYS.redEventTypes, seedRedEventTypes);

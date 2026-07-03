@@ -20,7 +20,8 @@ const GROUP_LABELS: Record<Reward["type"], string> = {
 };
 
 export function RewardsScreen({ navigate }: RewardsScreenProps) {
-  const { children, rewards, rewardRedemptions, starEvents, heartEvents, settings, addRewardRedemption } = useAppData();
+  const { children, rewards, rewardRedemptions, starEvents, starAdjustments, heartEvents, settings, addRewardRedemption } =
+    useAppData();
   const [activeReward, setActiveReward] = useState<Reward | null>(null);
 
   const activeChildren = getActiveChildren(children);
@@ -89,7 +90,9 @@ export function RewardsScreen({ navigate }: RewardsScreenProps) {
         <RedeemRewardModal
           reward={activeReward}
           children={activeChildren}
-          getAvailableStars={(childId) => getAvailableStarsForChild(childId, starEvents, rewardRedemptions, rewards)}
+          getAvailableStars={(childId) =>
+            getAvailableStarsForChild(childId, starEvents, starAdjustments, rewardRedemptions, rewards)
+          }
           familyHeartsCurrent={familyHeartsCurrent}
           familyHeartTarget={settings.familyHeartTarget}
           onConfirm={handleConfirm}

@@ -17,6 +17,7 @@ import type {
   RedEventType,
   Reward,
   RewardRedemption,
+  StarAdjustment,
   StarEvent,
 } from "../types/entities";
 import { KEYS } from "../storage/keys";
@@ -56,6 +57,7 @@ interface AppDataContextValue {
   children: Child[];
   behaviors: Behavior[];
   starEvents: StarEvent[];
+  starAdjustments: StarAdjustment[];
   heartEventTypes: HeartEventType[];
   heartEvents: HeartEvent[];
   redEventTypes: RedEventType[];
@@ -74,6 +76,7 @@ interface AppDataContextValue {
   archiveBehavior: (id: string, archived?: boolean) => void;
 
   addStarEvent: (event: StarEvent) => void;
+  addStarAdjustment: (adjustment: StarAdjustment) => void;
 
   addHeartEventType: (type: HeartEventType) => void;
   updateHeartEventType: (type: HeartEventType) => void;
@@ -105,6 +108,7 @@ export function AppDataProvider({ children: reactChildren }: { children: ReactNo
   const childrenState = useCollectionState<Child>(KEYS.children);
   const behaviorsState = useCollectionState<Behavior>(KEYS.behaviors);
   const starEventsState = useCollectionState<StarEvent>(KEYS.starEvents);
+  const starAdjustmentsState = useCollectionState<StarAdjustment>(KEYS.starAdjustments);
   const heartEventTypesState = useCollectionState<HeartEventType>(KEYS.heartEventTypes);
   const heartEventsState = useCollectionState<HeartEvent>(KEYS.heartEvents);
   const redEventTypesState = useCollectionState<RedEventType>(KEYS.redEventTypes);
@@ -164,6 +168,7 @@ export function AppDataProvider({ children: reactChildren }: { children: ReactNo
       childrenState.replaceAll(getCollection<Child>(KEYS.children));
       behaviorsState.replaceAll(getCollection<Behavior>(KEYS.behaviors));
       starEventsState.replaceAll(getCollection<StarEvent>(KEYS.starEvents));
+      starAdjustmentsState.replaceAll(getCollection<StarAdjustment>(KEYS.starAdjustments));
       heartEventTypesState.replaceAll(getCollection<HeartEventType>(KEYS.heartEventTypes));
       heartEventsState.replaceAll(getCollection<HeartEvent>(KEYS.heartEvents));
       redEventTypesState.replaceAll(getCollection<RedEventType>(KEYS.redEventTypes));
@@ -177,6 +182,7 @@ export function AppDataProvider({ children: reactChildren }: { children: ReactNo
     childrenState,
     behaviorsState,
     starEventsState,
+    starAdjustmentsState,
     heartEventTypesState,
     heartEventsState,
     redEventTypesState,
@@ -191,6 +197,7 @@ export function AppDataProvider({ children: reactChildren }: { children: ReactNo
     childrenState.replaceAll(getCollection<Child>(KEYS.children));
     behaviorsState.replaceAll(getCollection<Behavior>(KEYS.behaviors));
     starEventsState.replaceAll(getCollection<StarEvent>(KEYS.starEvents));
+    starAdjustmentsState.replaceAll(getCollection<StarAdjustment>(KEYS.starAdjustments));
     heartEventTypesState.replaceAll(getCollection<HeartEventType>(KEYS.heartEventTypes));
     heartEventsState.replaceAll(getCollection<HeartEvent>(KEYS.heartEvents));
     redEventTypesState.replaceAll(getCollection<RedEventType>(KEYS.redEventTypes));
@@ -202,6 +209,7 @@ export function AppDataProvider({ children: reactChildren }: { children: ReactNo
     childrenState,
     behaviorsState,
     starEventsState,
+    starAdjustmentsState,
     heartEventTypesState,
     heartEventsState,
     redEventTypesState,
@@ -215,6 +223,7 @@ export function AppDataProvider({ children: reactChildren }: { children: ReactNo
       children: childrenState.items,
       behaviors: behaviorsState.items,
       starEvents: starEventsState.items,
+      starAdjustments: starAdjustmentsState.items,
       heartEventTypes: heartEventTypesState.items,
       heartEvents: heartEventsState.items,
       redEventTypes: redEventTypesState.items,
@@ -233,6 +242,7 @@ export function AppDataProvider({ children: reactChildren }: { children: ReactNo
       archiveBehavior: behaviorsState.archive,
 
       addStarEvent: starEventsState.add,
+      addStarAdjustment: starAdjustmentsState.add,
 
       addHeartEventType: heartEventTypesState.add,
       updateHeartEventType: heartEventTypesState.update,
@@ -261,6 +271,7 @@ export function AppDataProvider({ children: reactChildren }: { children: ReactNo
       childrenState,
       behaviorsState,
       starEventsState,
+      starAdjustmentsState,
       heartEventTypesState,
       heartEventsState,
       redEventTypesState,

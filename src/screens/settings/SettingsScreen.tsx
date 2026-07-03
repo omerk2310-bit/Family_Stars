@@ -8,6 +8,7 @@ import { RedTypesSettings } from "./RedTypesSettings";
 import { RewardsSettings } from "./RewardsSettings";
 import { GlobalSettingsForm } from "./GlobalSettingsForm";
 import { DataManagementSettings } from "./DataManagementSettings";
+import { AdminSettings } from "./AdminSettings";
 import "./SettingsScreen.css";
 
 interface SettingsScreenProps {
@@ -23,6 +24,7 @@ const TABS: { id: SettingsTab; label: string }[] = [
   { id: "rewards", label: "פרסים" },
   { id: "global", label: "הגדרות כלליות" },
   { id: "data", label: "ניהול נתונים" },
+  { id: "admin", label: "מנהל" },
 ];
 
 export function SettingsScreen({ initialTab, navigate }: SettingsScreenProps) {
@@ -52,6 +54,7 @@ export function SettingsScreen({ initialTab, navigate }: SettingsScreenProps) {
           {tab === "rewards" && <RewardsSettings />}
           {tab === "global" && <GlobalSettingsForm />}
           {tab === "data" && <DataManagementSettings />}
+          {tab === "admin" && <AdminSettings />}
         </div>
       </div>
     </AppShell>

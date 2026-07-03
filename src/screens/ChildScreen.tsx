@@ -23,7 +23,8 @@ interface ChildScreenProps {
 }
 
 export function ChildScreen({ childId, navigate }: ChildScreenProps) {
-  const { children, behaviors, starEvents, rewardRedemptions, rewards, settings, addStarEvent } = useAppData();
+  const { children, behaviors, starEvents, starAdjustments, rewardRedemptions, rewards, settings, addStarEvent } =
+    useAppData();
   const today = useToday();
   const [activeBehavior, setActiveBehavior] = useState<Behavior | null>(null);
 
@@ -38,22 +39,25 @@ export function ChildScreen({ childId, navigate }: ChildScreenProps) {
   }
 
   const todayStars = getTodayStarsForChild(child.id, starEvents, today);
-  const availableStars = getAvailableStarsForChild(child.id, starEvents, rewardRedemptions, rewards);
-  const lifetimeXp = getLifetimeXpForChild(child.id, starEvents);
+  const availableStars = getAvailableStarsForChild(child.id, starEvents, starAdjustments, rewardRedemptions, rewards);
+  const lifetimeXp = getLifetimeXpForChild(child.id, starEvents, starAdjustments);
   const activeBehaviors = getActiveBehaviorsForChild(child.id, behaviors);
   const atDailyCap = todayStars >= settings.dailyStarCap;
 
   function handleConfirm(points: number, note?: string) {
     if (!activeBehavior) return;
+    const remaining = Math.max(0, settings.dailyStarCap - todayStars);
+    const awarded = Math.min(points, remaining);
+    setActiveBehavior(null);
+    if (awarded <= 0) return;
     addStarEvent({
       id: generateId(),
       childId: child!.id,
       behaviorId: activeBehavior.id,
-      pointsAwarded: points,
+      pointsAwarded: awarded,
       note,
       createdAt: new Date().toISOString(),
     });
-    setActiveBehavior(null);
   }
 
   return (
