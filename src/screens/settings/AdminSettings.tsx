@@ -4,7 +4,7 @@ import type { Child } from "../../types/entities";
 import { getActiveChildren, resolveChildName } from "../../storage/selectors";
 import { generateId } from "../../utils/id";
 import { formatHebrewDateTime } from "../../utils/format";
-import { stripToSignedDigits } from "../../utils/numericInput";
+import { stripNonDigits } from "../../utils/numericInput";
 
 const PIN_LENGTH = 4;
 
@@ -258,16 +258,19 @@ interface AdjustmentToolProps {
 function AdjustmentTool({ children, onApply }: AdjustmentToolProps) {
   const [childId, setChildId] = useState(children.length === 1 ? children[0].id : "");
   const [amount, setAmount] = useState("");
+  const [mode, setMode] = useState<"add" | "subtract">("add");
   const [note, setNote] = useState("");
   const [saved, setSaved] = useState(false);
 
-  const delta = Number(amount);
-  const canApply = childId !== "" && amount.trim() !== "" && !Number.isNaN(delta) && delta !== 0;
+  const magnitude = Number(amount);
+  const delta = mode === "subtract" ? -magnitude : magnitude;
+  const canApply = childId !== "" && amount.trim() !== "" && !Number.isNaN(magnitude) && magnitude !== 0;
 
   function handleApply() {
     if (!canApply) return;
     onApply(childId, delta, note.trim() || undefined);
     setAmount("");
+    setMode("add");
     setNote("");
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -276,8 +279,8 @@ function AdjustmentTool({ children, onApply }: AdjustmentToolProps) {
   return (
     <div className="settings-form">
       <p className="settings-form__hint">
-        שינוי ידני בכוכבים של ילדה — לא כפוף לתקרה היומית ואינו קשור להתנהגות מסוימת. אפשר להזין מספר שלילי כדי
-        להחסיר.
+        שינוי ידני בכוכבים של ילדה — לא כפוף לתקרה היומית ואינו קשור להתנהגות מסוימת. בחרו הוספה או החסרה, והזינו
+        כמות חיובית.
       </p>
       <div className="form-field">
         <label htmlFor="admin-adjust-child">עבור מי?</label>
@@ -293,14 +296,33 @@ function AdjustmentTool({ children, onApply }: AdjustmentToolProps) {
         </select>
       </div>
       <div className="form-field">
-        <label htmlFor="admin-adjust-amount">כמות (חיובי או שלילי)</label>
+        <label>סוג שינוי</label>
+        <div className="btn-row">
+          <button
+            type="button"
+            className={`btn ${mode === "add" ? "btn--primary" : "btn--secondary"}`}
+            onClick={() => setMode("add")}
+          >
+            ➕ הוספה
+          </button>
+          <button
+            type="button"
+            className={`btn ${mode === "subtract" ? "btn--primary" : "btn--secondary"}`}
+            onClick={() => setMode("subtract")}
+          >
+            ➖ החסרה
+          </button>
+        </div>
+      </div>
+      <div className="form-field">
+        <label htmlFor="admin-adjust-amount">כמות</label>
         <input
           id="admin-adjust-amount"
           type="text"
           inputMode="numeric"
           value={amount}
-          onChange={(e) => setAmount(stripToSignedDigits(e.target.value))}
-          placeholder="לדוגמה: 5 או ‎-3"
+          onChange={(e) => setAmount(stripNonDigits(e.target.value))}
+          placeholder="לדוגמה: 5"
         />
       </div>
       <div className="form-field">
