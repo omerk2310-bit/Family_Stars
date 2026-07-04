@@ -1,0 +1,29 @@
+.role-selector {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-4);
+}
+
+.role-selector__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5) var(--space-3);
+  box-shadow: var(--shadow-card);
+}
+
+.role-selector__card--parent {
+  background: var(--color-surface-muted, var(--color-surface));
+}
+
+.role-selector__icon {
+  font-size: 2rem;
+}
+
+.role-selector__label {
+  font-weight: 700;
+}

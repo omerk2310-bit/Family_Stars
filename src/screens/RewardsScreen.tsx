@@ -2,7 +2,12 @@ import { useState } from "react";
 import { useAppData } from "../state/AppDataContext";
 import type { Route } from "../types/routes";
 import type { Reward } from "../types/entities";
-import { getActiveChildren, getAvailableStarsForChild, getFamilyHeartsCurrent } from "../storage/selectors";
+import {
+  getActiveChildren,
+  getAvailableGoldStarsForChild,
+  getAvailableStarsForChild,
+  getFamilyHeartsCurrent,
+} from "../storage/selectors";
 import { generateId } from "../utils/id";
 import { AppShell } from "../components/layout/AppShell";
 import { EmptyState } from "../components/layout/EmptyState";
@@ -76,7 +81,7 @@ export function RewardsScreen({ navigate }: RewardsScreenProps) {
                         {reward.description && <p className="rewards-screen__item-desc">{reward.description}</p>}
                       </div>
                       <span className="rewards-screen__item-cost">
-                        {reward.cost} {group === "family" ? "💗" : "⭐"}
+                        {reward.cost} {group === "family" ? "💗" : reward.isGoldStar ? "🌟" : "⭐"}
                       </span>
                     </button>
                   ))}
@@ -92,7 +97,9 @@ export function RewardsScreen({ navigate }: RewardsScreenProps) {
           reward={activeReward}
           children={activeChildren}
           getAvailableStars={(childId) =>
-            getAvailableStarsForChild(childId, starEvents, starAdjustments, rewardRedemptions, rewards)
+            activeReward.isGoldStar
+              ? getAvailableGoldStarsForChild(childId, starEvents, starAdjustments, rewardRedemptions, rewards)
+              : getAvailableStarsForChild(childId, starEvents, starAdjustments, rewardRedemptions, rewards)
           }
           familyHeartsCurrent={familyHeartsCurrent}
           familyHeartTarget={settings.familyHeartTarget}
