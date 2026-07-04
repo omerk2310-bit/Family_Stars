@@ -21,6 +21,7 @@ export function BehaviorsSettings() {
   const [isBonus, setIsBonus] = useState(false);
   const [minPoints, setMinPoints] = useState("3");
   const [maxPoints, setMaxPoints] = useState("5");
+  const [isGoldStar, setIsGoldStar] = useState(false);
 
   const childBehaviors = behaviors.filter((b) => b.childId === childId);
   const orderedChildBehaviors = [...childBehaviors].sort((a, b) => a.order - b.order);
@@ -35,6 +36,7 @@ export function BehaviorsSettings() {
       setIsBonus(false);
       setMinPoints("3");
       setMaxPoints("5");
+      setIsGoldStar(false);
     } else {
       setTitle(behavior.title);
       setDescription(behavior.description);
@@ -43,6 +45,7 @@ export function BehaviorsSettings() {
       setIsBonus(behavior.isBonus);
       setMinPoints(String(behavior.minPoints ?? 3));
       setMaxPoints(String(behavior.maxPoints ?? 5));
+      setIsGoldStar(behavior.isGoldStar ?? false);
     }
   }
 
@@ -59,6 +62,7 @@ export function BehaviorsSettings() {
       isBonus,
       minPoints: isBonus ? parsedMin : undefined,
       maxPoints: isBonus ? parsedMax : undefined,
+      isGoldStar,
     };
 
     if (editing === "new") {
@@ -98,7 +102,10 @@ export function BehaviorsSettings() {
         onReorder={reorderBehaviors}
         renderItem={(behavior) => (
           <div>
-            <p style={{ fontWeight: 700 }}>{behavior.title}</p>
+            <p style={{ fontWeight: 700 }}>
+              {behavior.isGoldStar ? "🌟 " : ""}
+              {behavior.title}
+            </p>
             <p style={{ fontSize: "0.85rem", color: "var(--color-text-muted)" }}>
               {behavior.isBonus ? `${behavior.minPoints}–${behavior.maxPoints} ⭐ (בונוס)` : `${behavior.points} ⭐`} · {behavior.category}
             </p>
@@ -132,6 +139,11 @@ export function BehaviorsSettings() {
           <label className="settings-form__row">
             <input type="checkbox" checked={isBonus} onChange={(e) => setIsBonus(e.target.checked)} />
             התנהגות בונוס (טווח ניקוד)
+          </label>
+
+          <label className="settings-form__row">
+            <input type="checkbox" checked={isGoldStar} onChange={(e) => setIsGoldStar(e.target.checked)} />
+            🌟 התנהגות זהב (מזכה בכוכבי זהב בלבד)
           </label>
 
           {isBonus ? (

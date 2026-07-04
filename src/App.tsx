@@ -1,15 +1,26 @@
 import { useState } from "react";
-import { AppDataProvider } from "./state/AppDataContext";
+import { AppDataProvider, useAppData } from "./state/AppDataContext";
 import { useSession } from "./state/useSession";
 import type { Route } from "./types/routes";
+import { getActiveChildren } from "./storage/selectors";
+import {
+  clearStoredDeviceRole,
+  getStoredDeviceRole,
+  parseDeepLinkRole,
+  setStoredDeviceRole,
+  type DeviceRole,
+} from "./state/deviceRole";
 import { HomeScreen } from "./screens/HomeScreen";
 import { ChildScreen } from "./screens/ChildScreen";
 import { FamilyHeartsScreen } from "./screens/FamilyHeartsScreen";
 import { RedEventsScreen } from "./screens/RedEventsScreen";
 import { RewardsScreen } from "./screens/RewardsScreen";
 import { WeeklySummaryScreen } from "./screens/WeeklySummaryScreen";
+import { PendingApprovalsScreen } from "./screens/PendingApprovalsScreen";
 import { SettingsScreen } from "./screens/settings/SettingsScreen";
 import { AuthScreen } from "./screens/AuthScreen";
+import { RoleSelectorScreen } from "./screens/RoleSelectorScreen";
+import { RestrictedChildScreen } from "./screens/RestrictedChildScreen";
 import { AppShell } from "./components/layout/AppShell";
 
 function Router() {
@@ -34,9 +45,72 @@ function Router() {
       return <WeeklySummaryScreen navigate={setRoute} />;
     case "settings":
       return <SettingsScreen initialTab={route.tab} navigate={setRoute} />;
+    case "pendingApprovals":
+      return <PendingApprovalsScreen navigate={setRoute} />;
     default:
       return null;
   }
+}
+
+function DeviceRoleGate() {
+  const { children } = useAppData();
+  const [role, setRole] = useState<DeviceRole>(() => {
+    const deepLink = parseDeepLinkRole(window.location.search);
+    if (deepLink) {
+      setStoredDeviceRole(deepLink);
+      return deepLink;
+    }
+    return getStoredDeviceRole();
+  });
+  const [parentUnlocked, setParentUnlocked] = useState(false);
+
+  function selectChild(childId: string) {
+    const next: DeviceRole = { kind: "child", childId };
+    setStoredDeviceRole(next);
+    setRole(next);
+  }
+
+  function authenticateParent() {
+    setStoredDeviceRole({ kind: "parent" });
+    setRole({ kind: "parent" });
+    setParentUnlocked(true);
+  }
+
+  function resetDevice() {
+    clearStoredDeviceRole();
+    setParentUnlocked(false);
+    setRole({ kind: "unset" });
+  }
+
+  if (role.kind === "child") {
+    const stillActive = getActiveChildren(children).some((c) => c.id === role.childId);
+    if (!stillActive) {
+      return <RoleSelectorScreen onParentAuthenticated={authenticateParent} onSelectChild={selectChild} />;
+    }
+    return <RestrictedChildScreen childId={role.childId} onResetDevice={resetDevice} />;
+  }
+
+  if (role.kind === "parent") {
+    if (!parentUnlocked) {
+      return (
+        <RoleSelectorScreen
+          onParentAuthenticated={authenticateParent}
+          onSelectChild={selectChild}
+          startInPinMode
+        />
+      );
+    }
+    return (
+      <div className="device-role-gate__parent-wrapper">
+        <Router />
+        <button type="button" className="device-role-gate__switch-user" onClick={resetDevice}>
+          🔄 החלפת משתמש
+        </button>
+      </div>
+    );
+  }
+
+  return <RoleSelectorScreen onParentAuthenticated={authenticateParent} onSelectChild={selectChild} />;
 }
 
 export default function App() {
@@ -56,7 +130,7 @@ export default function App() {
 
   return (
     <AppDataProvider>
-      <Router />
+      <DeviceRoleGate />
     </AppDataProvider>
   );
 }

@@ -21,6 +21,7 @@ export interface Behavior {
   maxPoints?: number;
   archived?: boolean;
   order: number;
+  isGoldStar?: boolean;
 }
 
 export interface StarEvent {
@@ -30,6 +31,7 @@ export interface StarEvent {
   pointsAwarded: number;
   note?: string;
   createdAt: string;
+  isGoldStar: boolean;
 }
 
 export interface StarAdjustment {
@@ -38,6 +40,7 @@ export interface StarAdjustment {
   delta: number;
   note?: string;
   createdAt: string;
+  isGoldStar?: boolean;
 }
 
 export interface HeartEventType {
@@ -84,13 +87,17 @@ export interface Reward {
   requiresParentApproval: boolean;
   archived?: boolean;
   order: number;
+  isGoldStar?: boolean;
 }
+
+export type RewardRedemptionStatus = "pending" | "approved" | "rejected";
 
 export interface RewardRedemption {
   id: string;
   rewardId: string;
   childId?: string;
   createdAt: string;
+  status: RewardRedemptionStatus;
 }
 
 export interface AppSettings {

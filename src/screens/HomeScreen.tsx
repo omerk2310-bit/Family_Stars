@@ -6,6 +6,7 @@ import {
   getActiveChildren,
   getAvailableStarsForChild,
   getFamilyHeartsCurrent,
+  getPendingRewardRedemptions,
   getTodayStarsForChild,
 } from "../storage/selectors";
 import { formatHebrewDate } from "../utils/format";
@@ -27,6 +28,7 @@ export function HomeScreen({ navigate }: HomeScreenProps) {
 
   const activeChildren = getActiveChildren(children);
   const familyHeartsCurrent = getFamilyHeartsCurrent(heartEvents, rewardRedemptions, rewards);
+  const pendingCount = getPendingRewardRedemptions(rewardRedemptions).length;
 
   function handleAddStarsClick() {
     if (activeChildren.length === 0) return;
@@ -50,6 +52,14 @@ export function HomeScreen({ navigate }: HomeScreenProps) {
         </div>
         <HeartBadge value={familyHeartsCurrent} />
       </section>
+
+      <button
+        type="button"
+        className={`btn ${pendingCount > 0 ? "btn--amber" : "btn--secondary"} home-screen__approvals-btn`}
+        onClick={() => navigate({ screen: "pendingApprovals" })}
+      >
+        📋 בקשות ממתינות{pendingCount > 0 ? ` (${pendingCount})` : ""}
+      </button>
 
       <section className="home-screen__actions">
         <button type="button" className="btn btn--primary" onClick={handleAddStarsClick} disabled={activeChildren.length === 0}>

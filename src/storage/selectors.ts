@@ -43,12 +43,42 @@ export function getAvailableStarsForChild(
   rewardRedemptions: RewardRedemption[],
   rewards: Reward[]
 ): number {
-  const earned = getLifetimeXpForChild(childId, starEvents, starAdjustments);
+  const earned =
+    starEvents
+      .filter((e) => e.childId === childId && !e.isGoldStar)
+      .reduce((sum, e) => sum + e.pointsAwarded, 0) +
+    starAdjustments
+      .filter((a) => a.childId === childId && !a.isGoldStar)
+      .reduce((sum, a) => sum + a.delta, 0);
   const spent = rewardRedemptions
-    .filter((r) => r.childId === childId)
+    .filter((r) => r.childId === childId && r.status !== "rejected")
     .reduce((sum, r) => {
       const reward = rewards.find((rw) => rw.id === r.rewardId);
-      if (!reward || reward.type === "family") return sum;
+      if (!reward || reward.type === "family" || reward.isGoldStar) return sum;
+      return sum + reward.cost;
+    }, 0);
+  return Math.max(0, earned - spent);
+}
+
+export function getAvailableGoldStarsForChild(
+  childId: string,
+  starEvents: StarEvent[],
+  starAdjustments: StarAdjustment[],
+  rewardRedemptions: RewardRedemption[],
+  rewards: Reward[]
+): number {
+  const earned =
+    starEvents
+      .filter((e) => e.childId === childId && e.isGoldStar)
+      .reduce((sum, e) => sum + e.pointsAwarded, 0) +
+    starAdjustments
+      .filter((a) => a.childId === childId && a.isGoldStar)
+      .reduce((sum, a) => sum + a.delta, 0);
+  const spent = rewardRedemptions
+    .filter((r) => r.childId === childId && r.status !== "rejected")
+    .reduce((sum, r) => {
+      const reward = rewards.find((rw) => rw.id === r.rewardId);
+      if (!reward || reward.type === "family" || !reward.isGoldStar) return sum;
       return sum + reward.cost;
     }, 0);
   return Math.max(0, earned - spent);
@@ -67,13 +97,19 @@ export function getFamilyHeartsCurrent(
 ): number {
   const earned = heartEvents.reduce((sum, e) => sum + e.heartsAwarded, 0);
   const spent = rewardRedemptions
-    .filter((r) => !r.childId)
+    .filter((r) => !r.childId && r.status !== "rejected")
     .reduce((sum, r) => {
       const reward = rewards.find((rw) => rw.id === r.rewardId);
       if (!reward || reward.type !== "family") return sum;
       return sum + reward.cost;
     }, 0);
   return Math.max(0, earned - spent);
+}
+
+export function getPendingRewardRedemptions(rewardRedemptions: RewardRedemption[]): RewardRedemption[] {
+  return rewardRedemptions
+    .filter((r) => r.status === "pending")
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
 
 export function getThisWeekEventsForChild(childId: string, starEvents: StarEvent[], reference: Date): StarEvent[] {
