@@ -37,6 +37,7 @@ export function RewardsScreen({ navigate }: RewardsScreenProps) {
       rewardId: activeReward.id,
       childId,
       createdAt: new Date().toISOString(),
+      status: "approved",
     });
     setActiveReward(null);
   }

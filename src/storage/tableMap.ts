@@ -225,12 +225,14 @@ const rewardRedemptionConfig: TableConfig<RewardRedemption> = {
     reward_id: r.rewardId,
     child_id: r.childId ?? null,
     created_at: r.createdAt,
+    status: r.status,
   }),
   fromRow: (r) => ({
     id: r.id as string,
     rewardId: r.reward_id as string,
     childId: (r.child_id as string | null) ?? undefined,
     createdAt: r.created_at as string,
+    status: (r.status as RewardRedemption["status"]) ?? "approved",
   }),
 };
 

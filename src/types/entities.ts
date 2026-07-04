@@ -90,11 +90,14 @@ export interface Reward {
   isGoldStar?: boolean;
 }
 
+export type RewardRedemptionStatus = "pending" | "approved" | "rejected";
+
 export interface RewardRedemption {
   id: string;
   rewardId: string;
   childId?: string;
   createdAt: string;
+  status: RewardRedemptionStatus;
 }
 
 export interface AppSettings {

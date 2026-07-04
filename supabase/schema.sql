@@ -116,12 +116,16 @@ create table rewards (
 );
 
 -- 10. reward_redemptions
+-- Note: production databases created before status existed need the separate
+-- add-column/backfill/set-not-null migration instead of this fresh-install
+-- definition (see the retrofit pattern used for the GRANT statements below).
 create table reward_redemptions (
   id text primary key,
   user_id uuid not null default auth.uid() references auth.users,
   reward_id text not null,
   child_id text,
-  created_at timestamptz not null
+  created_at timestamptz not null,
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected'))
 );
 
 -- 11. app_settings (singleton per user)

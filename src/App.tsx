@@ -8,6 +8,7 @@ import { FamilyHeartsScreen } from "./screens/FamilyHeartsScreen";
 import { RedEventsScreen } from "./screens/RedEventsScreen";
 import { RewardsScreen } from "./screens/RewardsScreen";
 import { WeeklySummaryScreen } from "./screens/WeeklySummaryScreen";
+import { PendingApprovalsScreen } from "./screens/PendingApprovalsScreen";
 import { SettingsScreen } from "./screens/settings/SettingsScreen";
 import { AuthScreen } from "./screens/AuthScreen";
 import { AppShell } from "./components/layout/AppShell";
@@ -34,6 +35,8 @@ function Router() {
       return <WeeklySummaryScreen navigate={setRoute} />;
     case "settings":
       return <SettingsScreen initialTab={route.tab} navigate={setRoute} />;
+    case "pendingApprovals":
+      return <PendingApprovalsScreen navigate={setRoute} />;
     default:
       return null;
   }

@@ -170,6 +170,7 @@ interface AppDataContextValue {
   archiveReward: (id: string, archived?: boolean) => void;
   reorderRewards: (orderedIds: string[]) => void;
   addRewardRedemption: (redemption: RewardRedemption) => void;
+  updateRewardRedemptionStatus: (id: string, status: RewardRedemption["status"]) => void;
 
   updateSettings: (settings: AppSettings) => void;
 
@@ -268,6 +269,15 @@ export function AppDataProvider({ children: reactChildren }: { children: ReactNo
     [redEventsState]
   );
 
+  const updateRewardRedemptionStatus = useCallback(
+    (id: string, status: RewardRedemption["status"]) => {
+      const redemption = rewardRedemptionsState.items.find((r) => r.id === id);
+      if (!redemption) return;
+      rewardRedemptionsState.update({ ...redemption, status });
+    },
+    [rewardRedemptionsState]
+  );
+
   const updateSettings = useCallback((next: AppSettings) => {
     setSettings(next);
     supabase
@@ -351,6 +361,7 @@ export function AppDataProvider({ children: reactChildren }: { children: ReactNo
       archiveReward: rewardsState.archive,
       reorderRewards,
       addRewardRedemption: rewardRedemptionsState.add,
+      updateRewardRedemptionStatus,
 
       updateSettings,
 
@@ -375,6 +386,7 @@ export function AppDataProvider({ children: reactChildren }: { children: ReactNo
       reorderRewards,
       reorderBehaviors,
       linkRepairToRedEvent,
+      updateRewardRedemptionStatus,
       updateSettings,
       exportData,
       importData,

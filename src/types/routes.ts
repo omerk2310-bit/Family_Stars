@@ -15,4 +15,5 @@ export type Route =
   | { screen: "redEvents" }
   | { screen: "rewards" }
   | { screen: "weeklySummary" }
-  | { screen: "settings"; tab?: SettingsTab };
+  | { screen: "settings"; tab?: SettingsTab }
+  | { screen: "pendingApprovals" };
