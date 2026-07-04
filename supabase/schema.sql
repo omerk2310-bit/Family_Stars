@@ -17,10 +17,10 @@ create table children (
 );
 
 -- 2. behaviors
--- Note: production databases created before sort_order existed need the
--- separate add-column/backfill/set-not-null migration instead of this
--- fresh-install definition (see the retrofit pattern used for the GRANT
--- statements below, applied the same way for this column).
+-- Note: production databases created before sort_order/is_gold_star existed
+-- need the separate add-column/backfill/set-not-null migration instead of
+-- this fresh-install definition (see the retrofit pattern used for the GRANT
+-- statements below, applied the same way for these columns).
 create table behaviors (
   id text primary key,
   user_id uuid not null default auth.uid() references auth.users,
@@ -33,7 +33,8 @@ create table behaviors (
   min_points int,
   max_points int,
   archived boolean not null default false,
-  sort_order int not null default 0
+  sort_order int not null default 0,
+  is_gold_star boolean not null default false
 );
 
 -- 3. star_events
@@ -44,7 +45,8 @@ create table star_events (
   behavior_id text not null,
   points_awarded int not null,
   note text,
-  created_at timestamptz not null
+  created_at timestamptz not null,
+  is_gold_star boolean not null default false
 );
 
 -- 4. star_adjustments
@@ -54,7 +56,8 @@ create table star_adjustments (
   child_id text not null,
   delta int not null,
   note text,
-  created_at timestamptz not null
+  created_at timestamptz not null,
+  is_gold_star boolean not null default false
 );
 
 -- 5. heart_event_types
@@ -108,7 +111,8 @@ create table rewards (
   description text,
   requires_parent_approval boolean not null default false,
   archived boolean not null default false,
-  sort_order int not null
+  sort_order int not null,
+  is_gold_star boolean not null default false
 );
 
 -- 10. reward_redemptions

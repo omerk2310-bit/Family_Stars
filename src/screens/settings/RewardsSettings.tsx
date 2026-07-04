@@ -23,6 +23,7 @@ export function RewardsSettings() {
   const [cost, setCost] = useState("10");
   const [type, setType] = useState<RewardType>("small");
   const [requiresApproval, setRequiresApproval] = useState(false);
+  const [isGoldStar, setIsGoldStar] = useState(false);
 
   function openEdit(reward: Reward | "new") {
     setEditing(reward);
@@ -32,18 +33,21 @@ export function RewardsSettings() {
       setCost("10");
       setType("small");
       setRequiresApproval(false);
+      setIsGoldStar(false);
     } else {
       setTitle(reward.title);
       setDescription(reward.description ?? "");
       setCost(String(reward.cost));
       setType(reward.type);
       setRequiresApproval(reward.requiresParentApproval);
+      setIsGoldStar(reward.isGoldStar ?? false);
     }
   }
 
   function handleSave() {
     if (!title.trim()) return;
     const clampedCost = Math.max(1, parseIntOrFallback(cost, 1));
+    const goldStar = type === "family" ? false : isGoldStar;
     if (editing === "new") {
       const maxOrder = rewards.reduce((m, r) => Math.max(m, r.order), -1);
       addReward({
@@ -54,6 +58,7 @@ export function RewardsSettings() {
         type,
         requiresParentApproval: requiresApproval,
         order: maxOrder + 1,
+        isGoldStar: goldStar,
       });
     } else if (editing) {
       updateReward({
@@ -63,6 +68,7 @@ export function RewardsSettings() {
         cost: clampedCost,
         type,
         requiresParentApproval: requiresApproval,
+        isGoldStar: goldStar,
       });
     }
     setEditing(null);
@@ -81,7 +87,10 @@ export function RewardsSettings() {
         onReorder={reorderRewards}
         renderItem={(reward) => (
           <div>
-            <p style={{ fontWeight: 700 }}>{reward.title}</p>
+            <p style={{ fontWeight: 700 }}>
+              {reward.isGoldStar ? "🌟 " : ""}
+              {reward.title}
+            </p>
             <p style={{ fontSize: "0.85rem", color: "var(--color-text-muted)" }}>
               {TYPE_LABELS[reward.type]} · {reward.cost}
             </p>
@@ -131,6 +140,15 @@ export function RewardsSettings() {
             <input type="checkbox" checked={requiresApproval} onChange={(e) => setRequiresApproval(e.target.checked)} />
             דורש אישור הורה
           </label>
+
+          {type === "family" ? (
+            <p className="settings-form__hint">פרס משפחתי תמיד נרכש בלבבות — לא ניתן לסמן אותו כפרס זהב.</p>
+          ) : (
+            <label className="settings-form__row">
+              <input type="checkbox" checked={isGoldStar} onChange={(e) => setIsGoldStar(e.target.checked)} />
+              🌟 פרס זהב (ניתן למימוש רק בכוכבי זהב)
+            </label>
+          )}
         </Modal>
       )}
 

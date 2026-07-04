@@ -35,6 +35,7 @@ export function RedEventsScreen({ navigate }: RedEventsScreenProps) {
 
     if (payload.wasRepaired && payload.childId && payload.repairBehaviorId) {
       const starEventId = generateId();
+      const repairBehavior = behaviors.find((b) => b.id === payload.repairBehaviorId);
       addStarEvent({
         id: starEventId,
         childId: payload.childId,
@@ -42,6 +43,7 @@ export function RedEventsScreen({ navigate }: RedEventsScreenProps) {
         pointsAwarded: payload.repairPoints ?? 0,
         note: "תיקון לאחר אירוע אדום",
         createdAt: new Date().toISOString(),
+        isGoldStar: repairBehavior?.isGoldStar ?? false,
       });
       linkRepairToRedEvent(redEventId, starEventId);
     }

@@ -57,8 +57,8 @@ export function AdminSettings({ onLock }: AdminSettingsProps) {
 
       <AdjustmentTool
         children={activeChildren}
-        onApply={(childId, delta, note) => {
-          addStarAdjustment({ id: generateId(), childId, delta, note, createdAt: new Date().toISOString() });
+        onApply={(childId, delta, isGoldStar, note) => {
+          addStarAdjustment({ id: generateId(), childId, delta, isGoldStar, note, createdAt: new Date().toISOString() });
         }}
       />
 
@@ -82,7 +82,7 @@ export function AdminSettings({ onLock }: AdminSettingsProps) {
                     adjustment.delta >= 0 ? "admin-settings__delta--positive" : "admin-settings__delta--negative"
                   }
                 >
-                  {adjustment.delta >= 0 ? `+${adjustment.delta}` : adjustment.delta} ⭐
+                  {adjustment.delta >= 0 ? `+${adjustment.delta}` : adjustment.delta} {adjustment.isGoldStar ? "🌟" : "⭐"}
                 </span>
               </li>
             ))}
@@ -252,13 +252,14 @@ export function UnlockForm({ expectedPin, onUnlock }: { expectedPin: string; onU
 
 interface AdjustmentToolProps {
   children: Child[];
-  onApply: (childId: string, delta: number, note?: string) => void;
+  onApply: (childId: string, delta: number, isGoldStar: boolean, note?: string) => void;
 }
 
 function AdjustmentTool({ children, onApply }: AdjustmentToolProps) {
   const [childId, setChildId] = useState(children.length === 1 ? children[0].id : "");
   const [amount, setAmount] = useState("");
   const [mode, setMode] = useState<"add" | "subtract">("add");
+  const [currency, setCurrency] = useState<"regular" | "gold">("regular");
   const [note, setNote] = useState("");
   const [saved, setSaved] = useState(false);
 
@@ -268,9 +269,10 @@ function AdjustmentTool({ children, onApply }: AdjustmentToolProps) {
 
   function handleApply() {
     if (!canApply) return;
-    onApply(childId, delta, note.trim() || undefined);
+    onApply(childId, delta, currency === "gold", note.trim() || undefined);
     setAmount("");
     setMode("add");
+    setCurrency("regular");
     setNote("");
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -294,6 +296,25 @@ function AdjustmentTool({ children, onApply }: AdjustmentToolProps) {
             </option>
           ))}
         </select>
+      </div>
+      <div className="form-field">
+        <label>מטבע</label>
+        <div className="btn-row">
+          <button
+            type="button"
+            className={`btn ${currency === "regular" ? "btn--primary" : "btn--secondary"}`}
+            onClick={() => setCurrency("regular")}
+          >
+            ⭐ רגיל
+          </button>
+          <button
+            type="button"
+            className={`btn ${currency === "gold" ? "btn--primary" : "btn--secondary"}`}
+            onClick={() => setCurrency("gold")}
+          >
+            🌟 זהב
+          </button>
+        </div>
       </div>
       <div className="form-field">
         <label>סוג שינוי</label>

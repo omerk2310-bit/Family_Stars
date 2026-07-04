@@ -5,6 +5,7 @@ import type { Route } from "../types/routes";
 import type { Behavior } from "../types/entities";
 import {
   getActiveBehaviorsForChild,
+  getAvailableGoldStarsForChild,
   getAvailableStarsForChild,
   getLifetimeXpForChild,
   getTodayStarsForChild,
@@ -40,6 +41,13 @@ export function ChildScreen({ childId, navigate }: ChildScreenProps) {
 
   const todayStars = getTodayStarsForChild(child.id, starEvents, today);
   const availableStars = getAvailableStarsForChild(child.id, starEvents, starAdjustments, rewardRedemptions, rewards);
+  const availableGoldStars = getAvailableGoldStarsForChild(
+    child.id,
+    starEvents,
+    starAdjustments,
+    rewardRedemptions,
+    rewards
+  );
   const lifetimeXp = getLifetimeXpForChild(child.id, starEvents, starAdjustments);
   const activeBehaviors = getActiveBehaviorsForChild(child.id, behaviors);
   const atDailyCap = todayStars >= settings.dailyStarCap;
@@ -57,6 +65,7 @@ export function ChildScreen({ childId, navigate }: ChildScreenProps) {
       pointsAwarded: awarded,
       note,
       createdAt: new Date().toISOString(),
+      isGoldStar: activeBehavior.isGoldStar ?? false,
     });
   }
 
@@ -65,6 +74,7 @@ export function ChildScreen({ childId, navigate }: ChildScreenProps) {
       <div className="child-screen">
         <div className="child-screen__stats">
           <StarBadge value={availableStars} label="כוכבים זמינים" />
+          {availableGoldStars > 0 && <StarBadge value={availableGoldStars} label="כוכבי זהב" gold />}
           <div className="child-screen__stat">
             <span className="child-screen__stat-value">{todayStars} / {settings.dailyStarCap}</span>
             <span className="child-screen__stat-label">כוכבים היום</span>

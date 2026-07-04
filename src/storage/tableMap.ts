@@ -58,6 +58,7 @@ const behaviorConfig: TableConfig<Behavior> = {
     max_points: b.maxPoints ?? null,
     archived: b.archived ?? false,
     sort_order: b.order,
+    is_gold_star: b.isGoldStar ?? false,
   }),
   fromRow: (r) => ({
     id: r.id as string,
@@ -71,6 +72,7 @@ const behaviorConfig: TableConfig<Behavior> = {
     maxPoints: (r.max_points as number | null) ?? undefined,
     archived: (r.archived as boolean) ?? undefined,
     order: r.sort_order as number,
+    isGoldStar: (r.is_gold_star as boolean) ?? false,
   }),
 };
 
@@ -83,6 +85,7 @@ const starEventConfig: TableConfig<StarEvent> = {
     points_awarded: e.pointsAwarded,
     note: e.note ?? null,
     created_at: e.createdAt,
+    is_gold_star: e.isGoldStar,
   }),
   fromRow: (r) => ({
     id: r.id as string,
@@ -91,6 +94,7 @@ const starEventConfig: TableConfig<StarEvent> = {
     pointsAwarded: r.points_awarded as number,
     note: (r.note as string | null) ?? undefined,
     createdAt: r.created_at as string,
+    isGoldStar: (r.is_gold_star as boolean) ?? false,
   }),
 };
 
@@ -102,6 +106,7 @@ const starAdjustmentConfig: TableConfig<StarAdjustment> = {
     delta: a.delta,
     note: a.note ?? null,
     created_at: a.createdAt,
+    is_gold_star: a.isGoldStar ?? false,
   }),
   fromRow: (r) => ({
     id: r.id as string,
@@ -109,6 +114,7 @@ const starAdjustmentConfig: TableConfig<StarAdjustment> = {
     delta: r.delta as number,
     note: (r.note as string | null) ?? undefined,
     createdAt: r.created_at as string,
+    isGoldStar: (r.is_gold_star as boolean) ?? false,
   }),
 };
 
@@ -197,6 +203,7 @@ const rewardConfig: TableConfig<Reward> = {
     requires_parent_approval: r.requiresParentApproval,
     archived: r.archived ?? false,
     sort_order: r.order,
+    is_gold_star: r.isGoldStar ?? false,
   }),
   fromRow: (r) => ({
     id: r.id as string,
@@ -207,6 +214,7 @@ const rewardConfig: TableConfig<Reward> = {
     requiresParentApproval: r.requires_parent_approval as boolean,
     archived: (r.archived as boolean) ?? undefined,
     order: r.sort_order as number,
+    isGoldStar: (r.is_gold_star as boolean) ?? false,
   }),
 };
 
