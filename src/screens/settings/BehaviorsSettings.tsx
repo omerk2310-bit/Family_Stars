@@ -2,13 +2,14 @@ import { useState } from "react";
 import { useAppData } from "../../state/AppDataContext";
 import type { Behavior } from "../../types/entities";
 import { generateId } from "../../utils/id";
+import { parseIntOrFallback, stripNonDigits } from "../../utils/numericInput";
 import { EntityListEditor } from "../../components/shared/EntityListEditor";
 import { Modal } from "../../components/shared/Modal";
 import { ConfirmDialog } from "../../components/shared/ConfirmDialog";
 import { EmptyState } from "../../components/layout/EmptyState";
 
 export function BehaviorsSettings() {
-  const { children, behaviors, addBehavior, updateBehavior, archiveBehavior } = useAppData();
+  const { children, behaviors, addBehavior, updateBehavior, archiveBehavior, reorderBehaviors } = useAppData();
   const [childId, setChildId] = useState(children[0]?.id ?? "");
   const [editing, setEditing] = useState<Behavior | "new" | null>(null);
   const [archiving, setArchiving] = useState<Behavior | null>(null);
@@ -16,12 +17,13 @@ export function BehaviorsSettings() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
-  const [points, setPoints] = useState(5);
+  const [points, setPoints] = useState("5");
   const [isBonus, setIsBonus] = useState(false);
-  const [minPoints, setMinPoints] = useState(3);
-  const [maxPoints, setMaxPoints] = useState(5);
+  const [minPoints, setMinPoints] = useState("3");
+  const [maxPoints, setMaxPoints] = useState("5");
 
   const childBehaviors = behaviors.filter((b) => b.childId === childId);
+  const orderedChildBehaviors = [...childBehaviors].sort((a, b) => a.order - b.order);
 
   function openEdit(behavior: Behavior | "new") {
     setEditing(behavior);
@@ -29,35 +31,39 @@ export function BehaviorsSettings() {
       setTitle("");
       setDescription("");
       setCategory("");
-      setPoints(5);
+      setPoints("5");
       setIsBonus(false);
-      setMinPoints(3);
-      setMaxPoints(5);
+      setMinPoints("3");
+      setMaxPoints("5");
     } else {
       setTitle(behavior.title);
       setDescription(behavior.description);
       setCategory(behavior.category);
-      setPoints(behavior.points);
+      setPoints(String(behavior.points));
       setIsBonus(behavior.isBonus);
-      setMinPoints(behavior.minPoints ?? 3);
-      setMaxPoints(behavior.maxPoints ?? 5);
+      setMinPoints(String(behavior.minPoints ?? 3));
+      setMaxPoints(String(behavior.maxPoints ?? 5));
     }
   }
 
   function handleSave() {
     if (!title.trim() || !childId) return;
+    const parsedPoints = Math.max(1, parseIntOrFallback(points, 1));
+    const parsedMin = Math.max(1, parseIntOrFallback(minPoints, 1));
+    const parsedMax = Math.max(parsedMin, parseIntOrFallback(maxPoints, parsedMin));
     const base = {
       title: title.trim(),
       description: description.trim(),
       category: category.trim() || "כללי",
-      points: isBonus ? minPoints : points,
+      points: isBonus ? parsedMin : parsedPoints,
       isBonus,
-      minPoints: isBonus ? minPoints : undefined,
-      maxPoints: isBonus ? maxPoints : undefined,
+      minPoints: isBonus ? parsedMin : undefined,
+      maxPoints: isBonus ? parsedMax : undefined,
     };
 
     if (editing === "new") {
-      addBehavior({ id: generateId(), childId, archived: false, ...base });
+      const maxOrder = childBehaviors.reduce((m, b) => Math.max(m, b.order), -1);
+      addBehavior({ id: generateId(), childId, archived: false, order: maxOrder + 1, ...base });
     } else if (editing) {
       updateBehavior({ ...editing, ...base });
     }
@@ -82,12 +88,14 @@ export function BehaviorsSettings() {
       </div>
 
       <EntityListEditor
-        items={childBehaviors}
+        items={orderedChildBehaviors}
         emptyMessage="עוד אין התנהגויות עבורה."
         addLabel="+ הוספת התנהגות"
         onAdd={() => openEdit("new")}
         onEdit={(b) => openEdit(b)}
         onArchiveToggle={(b) => setArchiving(b)}
+        reorderable
+        onReorder={reorderBehaviors}
         renderItem={(behavior) => (
           <div>
             <p style={{ fontWeight: 700 }}>{behavior.title}</p>
@@ -132,20 +140,20 @@ export function BehaviorsSettings() {
                 <label htmlFor="behavior-min">מינימום</label>
                 <input
                   id="behavior-min"
-                  type="number"
-                  min={1}
+                  type="text"
+                  inputMode="numeric"
                   value={minPoints}
-                  onChange={(e) => setMinPoints(Math.max(1, Number(e.target.value)))}
+                  onChange={(e) => setMinPoints(stripNonDigits(e.target.value))}
                 />
               </div>
               <div className="form-field" style={{ flex: 1 }}>
                 <label htmlFor="behavior-max">מקסימום</label>
                 <input
                   id="behavior-max"
-                  type="number"
-                  min={minPoints}
+                  type="text"
+                  inputMode="numeric"
                   value={maxPoints}
-                  onChange={(e) => setMaxPoints(Math.max(minPoints, Number(e.target.value)))}
+                  onChange={(e) => setMaxPoints(stripNonDigits(e.target.value))}
                 />
               </div>
             </div>
@@ -154,10 +162,10 @@ export function BehaviorsSettings() {
               <label htmlFor="behavior-points">ניקוד</label>
               <input
                 id="behavior-points"
-                type="number"
-                min={1}
+                type="text"
+                inputMode="numeric"
                 value={points}
-                onChange={(e) => setPoints(Math.max(1, Number(e.target.value)))}
+                onChange={(e) => setPoints(stripNonDigits(e.target.value))}
               />
             </div>
           )}

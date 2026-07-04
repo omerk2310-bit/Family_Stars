@@ -4,6 +4,7 @@ import type { Child } from "../../types/entities";
 import { getActiveChildren, resolveChildName } from "../../storage/selectors";
 import { generateId } from "../../utils/id";
 import { formatHebrewDateTime } from "../../utils/format";
+import { stripToSignedDigits } from "../../utils/numericInput";
 
 const PIN_LENGTH = 4;
 
@@ -295,9 +296,10 @@ function AdjustmentTool({ children, onApply }: AdjustmentToolProps) {
         <label htmlFor="admin-adjust-amount">כמות (חיובי או שלילי)</label>
         <input
           id="admin-adjust-amount"
-          type="number"
+          type="text"
+          inputMode="numeric"
           value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          onChange={(e) => setAmount(stripToSignedDigits(e.target.value))}
           placeholder="לדוגמה: 5 או ‎-3"
         />
       </div>

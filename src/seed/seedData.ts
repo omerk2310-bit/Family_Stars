@@ -42,6 +42,7 @@ export const seedBehaviors: Behavior[] = [
     points: 5,
     category: "תקשורת בטוחה",
     isBonus: false,
+    order: 0,
   },
   {
     id: "seed-behavior-bechora-word-repair",
@@ -51,6 +52,7 @@ export const seedBehaviors: Behavior[] = [
     points: 3,
     category: "תיקון",
     isBonus: false,
+    order: 1,
   },
   {
     id: "seed-behavior-bechora-safe-body",
@@ -61,6 +63,7 @@ export const seedBehaviors: Behavior[] = [
     points: 5,
     category: "ויסות רגשי",
     isBonus: false,
+    order: 2,
   },
   {
     id: "seed-behavior-bechora-calm-night",
@@ -71,6 +74,7 @@ export const seedBehaviors: Behavior[] = [
     points: 4,
     category: "שינה",
     isBonus: false,
+    order: 3,
   },
   {
     id: "seed-behavior-bechora-return-to-calm",
@@ -80,6 +84,7 @@ export const seedBehaviors: Behavior[] = [
     points: 3,
     category: "שינה",
     isBonus: false,
+    order: 4,
   },
   {
     id: "seed-behavior-bechora-accepting-no",
@@ -89,6 +94,7 @@ export const seedBehaviors: Behavior[] = [
     points: 4,
     category: "גבולות",
     isBonus: false,
+    order: 5,
   },
   {
     id: "seed-behavior-bechora-sibling-conflict",
@@ -99,6 +105,7 @@ export const seedBehaviors: Behavior[] = [
     points: 4,
     category: "יחסים עם אחים",
     isBonus: false,
+    order: 6,
   },
   {
     id: "seed-behavior-bechora-storm-repair",
@@ -108,6 +115,7 @@ export const seedBehaviors: Behavior[] = [
     points: 5,
     category: "תיקון",
     isBonus: false,
+    order: 7,
   },
   {
     id: "seed-behavior-bechora-courage-bonus",
@@ -119,6 +127,7 @@ export const seedBehaviors: Behavior[] = [
     isBonus: true,
     minPoints: 3,
     maxPoints: 5,
+    order: 8,
   },
   // הקטנה
   {
@@ -130,6 +139,7 @@ export const seedBehaviors: Behavior[] = [
     points: 4,
     category: "תקשורת בטוחה",
     isBonus: false,
+    order: 0,
   },
   {
     id: "seed-behavior-ktana-explained-after-reminder",
@@ -139,6 +149,7 @@ export const seedBehaviors: Behavior[] = [
     points: 3,
     category: "תקשורת בטוחה",
     isBonus: false,
+    order: 1,
   },
   {
     id: "seed-behavior-ktana-accepting-no",
@@ -148,6 +159,7 @@ export const seedBehaviors: Behavior[] = [
     points: 5,
     category: "גבולות",
     isBonus: false,
+    order: 2,
   },
   {
     id: "seed-behavior-ktana-accepting-no-friend",
@@ -157,6 +169,7 @@ export const seedBehaviors: Behavior[] = [
     points: 5,
     category: "גבולות",
     isBonus: false,
+    order: 3,
   },
   {
     id: "seed-behavior-ktana-nice-words",
@@ -167,6 +180,7 @@ export const seedBehaviors: Behavior[] = [
     points: 3,
     category: "תקשורת בטוחה",
     isBonus: false,
+    order: 4,
   },
   {
     id: "seed-behavior-ktana-small-repair",
@@ -177,6 +191,7 @@ export const seedBehaviors: Behavior[] = [
     points: 4,
     category: "תיקון",
     isBonus: false,
+    order: 5,
   },
   {
     id: "seed-behavior-ktana-maturity-bonus",
@@ -188,6 +203,7 @@ export const seedBehaviors: Behavior[] = [
     isBonus: true,
     minPoints: 3,
     maxPoints: 5,
+    order: 6,
   },
 ];
 
