@@ -20,6 +20,7 @@ export interface Behavior {
   minPoints?: number;
   maxPoints?: number;
   archived?: boolean;
+  order: number;
 }
 
 export interface StarEvent {

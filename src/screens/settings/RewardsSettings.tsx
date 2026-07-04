@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAppData } from "../../state/AppDataContext";
 import type { Reward, RewardType } from "../../types/entities";
 import { generateId } from "../../utils/id";
+import { parseIntOrFallback, stripNonDigits } from "../../utils/numericInput";
 import { EntityListEditor } from "../../components/shared/EntityListEditor";
 import { Modal } from "../../components/shared/Modal";
 import { ConfirmDialog } from "../../components/shared/ConfirmDialog";
@@ -19,7 +20,7 @@ export function RewardsSettings() {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [cost, setCost] = useState(10);
+  const [cost, setCost] = useState("10");
   const [type, setType] = useState<RewardType>("small");
   const [requiresApproval, setRequiresApproval] = useState(false);
 
@@ -28,13 +29,13 @@ export function RewardsSettings() {
     if (reward === "new") {
       setTitle("");
       setDescription("");
-      setCost(10);
+      setCost("10");
       setType("small");
       setRequiresApproval(false);
     } else {
       setTitle(reward.title);
       setDescription(reward.description ?? "");
-      setCost(reward.cost);
+      setCost(String(reward.cost));
       setType(reward.type);
       setRequiresApproval(reward.requiresParentApproval);
     }
@@ -42,13 +43,14 @@ export function RewardsSettings() {
 
   function handleSave() {
     if (!title.trim()) return;
+    const clampedCost = Math.max(1, parseIntOrFallback(cost, 1));
     if (editing === "new") {
       const maxOrder = rewards.reduce((m, r) => Math.max(m, r.order), -1);
       addReward({
         id: generateId(),
         title: title.trim(),
         description: description.trim() || undefined,
-        cost,
+        cost: clampedCost,
         type,
         requiresParentApproval: requiresApproval,
         order: maxOrder + 1,
@@ -58,7 +60,7 @@ export function RewardsSettings() {
         ...editing,
         title: title.trim(),
         description: description.trim() || undefined,
-        cost,
+        cost: clampedCost,
         type,
         requiresParentApproval: requiresApproval,
       });
@@ -69,7 +71,7 @@ export function RewardsSettings() {
   return (
     <div>
       <EntityListEditor
-        items={rewards}
+        items={[...rewards].sort((a, b) => a.order - b.order)}
         emptyMessage="עוד לא נוספו פרסים."
         addLabel="+ הוספת פרס"
         onAdd={() => openEdit("new")}
@@ -119,10 +121,10 @@ export function RewardsSettings() {
             <label htmlFor="reward-cost">עלות ({type === "family" ? "לבבות" : "כוכבים"})</label>
             <input
               id="reward-cost"
-              type="number"
-              min={1}
+              type="text"
+              inputMode="numeric"
               value={cost}
-              onChange={(e) => setCost(Math.max(1, Number(e.target.value)))}
+              onChange={(e) => setCost(stripNonDigits(e.target.value))}
             />
           </div>
           <label className="settings-form__row">

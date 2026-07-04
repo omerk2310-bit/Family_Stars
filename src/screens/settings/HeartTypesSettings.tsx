@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAppData } from "../../state/AppDataContext";
 import type { HeartEventType } from "../../types/entities";
 import { generateId } from "../../utils/id";
+import { parseIntOrFallback, stripNonDigits } from "../../utils/numericInput";
 import { EntityListEditor } from "../../components/shared/EntityListEditor";
 import { Modal } from "../../components/shared/Modal";
 import { ConfirmDialog } from "../../components/shared/ConfirmDialog";
@@ -13,27 +14,28 @@ export function HeartTypesSettings() {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [hearts, setHearts] = useState(1);
+  const [hearts, setHearts] = useState("1");
 
   function openEdit(type: HeartEventType | "new") {
     setEditing(type);
     if (type === "new") {
       setTitle("");
       setDescription("");
-      setHearts(1);
+      setHearts("1");
     } else {
       setTitle(type.title);
       setDescription(type.description);
-      setHearts(type.hearts);
+      setHearts(String(type.hearts));
     }
   }
 
   function handleSave() {
     if (!title.trim()) return;
+    const clampedHearts = Math.max(1, parseIntOrFallback(hearts, 1));
     if (editing === "new") {
-      addHeartEventType({ id: generateId(), title: title.trim(), description: description.trim(), hearts });
+      addHeartEventType({ id: generateId(), title: title.trim(), description: description.trim(), hearts: clampedHearts });
     } else if (editing) {
-      updateHeartEventType({ ...editing, title: title.trim(), description: description.trim(), hearts });
+      updateHeartEventType({ ...editing, title: title.trim(), description: description.trim(), hearts: clampedHearts });
     }
     setEditing(null);
   }
@@ -77,10 +79,10 @@ export function HeartTypesSettings() {
             <label htmlFor="heart-type-hearts">לבבות</label>
             <input
               id="heart-type-hearts"
-              type="number"
-              min={1}
+              type="text"
+              inputMode="numeric"
               value={hearts}
-              onChange={(e) => setHearts(Math.max(1, Number(e.target.value)))}
+              onChange={(e) => setHearts(stripNonDigits(e.target.value))}
             />
           </div>
         </Modal>

@@ -149,6 +149,7 @@ interface AppDataContextValue {
   addBehavior: (behavior: Behavior) => void;
   updateBehavior: (behavior: Behavior) => void;
   archiveBehavior: (id: string, archived?: boolean) => void;
+  reorderBehaviors: (orderedIds: string[]) => void;
 
   addStarEvent: (event: StarEvent) => void;
   addStarAdjustment: (adjustment: StarAdjustment) => void;
@@ -242,6 +243,22 @@ export function AppDataProvider({ children: reactChildren }: { children: ReactNo
     [rewardsState]
   );
 
+  const reorderBehaviors = useCallback(
+    (orderedIds: string[]) => {
+      const orderById = new Map(orderedIds.map((id, index) => [id, index]));
+      const next = behaviorsState.items.map((b) =>
+        orderById.has(b.id) ? { ...b, order: orderById.get(b.id)! } : b
+      );
+      behaviorsState.replaceAll(next);
+      next
+        .filter((b) => orderById.has(b.id))
+        .forEach((b) => {
+          upsertRow(TABLE_CONFIGS[KEYS.behaviors] as unknown as TableConfig<Behavior>, b).catch(() => undefined);
+        });
+    },
+    [behaviorsState]
+  );
+
   const linkRepairToRedEvent = useCallback(
     (redEventId: string, starEventId: string) => {
       const event = redEventsState.items.find((e) => e.id === redEventId);
@@ -313,6 +330,7 @@ export function AppDataProvider({ children: reactChildren }: { children: ReactNo
       addBehavior: behaviorsState.add,
       updateBehavior: behaviorsState.update,
       archiveBehavior: behaviorsState.archive,
+      reorderBehaviors,
 
       addStarEvent: starEventsState.add,
       addStarAdjustment: starAdjustmentsState.add,
@@ -355,6 +373,7 @@ export function AppDataProvider({ children: reactChildren }: { children: ReactNo
       settings,
       reorderChildren,
       reorderRewards,
+      reorderBehaviors,
       linkRepairToRedEvent,
       updateSettings,
       exportData,

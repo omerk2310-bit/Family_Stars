@@ -59,7 +59,7 @@ export function ChildrenSettings() {
   return (
     <div>
       <EntityListEditor
-        items={children}
+        items={[...children].sort((a, b) => a.order - b.order)}
         emptyMessage="עוד לא נוספו ילדים."
         addLabel="+ הוספת ילדה"
         onAdd={() => openEdit("new")}

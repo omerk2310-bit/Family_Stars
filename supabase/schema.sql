@@ -17,6 +17,10 @@ create table children (
 );
 
 -- 2. behaviors
+-- Note: production databases created before sort_order existed need the
+-- separate add-column/backfill/set-not-null migration instead of this
+-- fresh-install definition (see the retrofit pattern used for the GRANT
+-- statements below, applied the same way for this column).
 create table behaviors (
   id text primary key,
   user_id uuid not null default auth.uid() references auth.users,
@@ -28,7 +32,8 @@ create table behaviors (
   is_bonus boolean not null default false,
   min_points int,
   max_points int,
-  archived boolean not null default false
+  archived boolean not null default false,
+  sort_order int not null default 0
 );
 
 -- 3. star_events

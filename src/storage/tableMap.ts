@@ -57,6 +57,7 @@ const behaviorConfig: TableConfig<Behavior> = {
     min_points: b.minPoints ?? null,
     max_points: b.maxPoints ?? null,
     archived: b.archived ?? false,
+    sort_order: b.order,
   }),
   fromRow: (r) => ({
     id: r.id as string,
@@ -69,6 +70,7 @@ const behaviorConfig: TableConfig<Behavior> = {
     minPoints: (r.min_points as number | null) ?? undefined,
     maxPoints: (r.max_points as number | null) ?? undefined,
     archived: (r.archived as boolean) ?? undefined,
+    order: r.sort_order as number,
   }),
 };
 
