@@ -20,12 +20,15 @@ interface AdminSettingsProps {
   onLock: () => void;
 }
 
+const ADMIN_CORRECTION_BEHAVIOR_ID = "admin-correction";
+
 export function AdminSettings({ onLock }: AdminSettingsProps) {
-  const { children, starAdjustments, settings, updateSettings, addStarAdjustment } = useAppData();
+  const { children, starEvents, settings, updateSettings, addStarEvent } = useAppData();
   const [changingPin, setChangingPin] = useState(false);
 
   const activeChildren = getActiveChildren(children);
-  const recentAdjustments = [...starAdjustments]
+  const recentAdjustments = starEvents
+    .filter((e) => e.behaviorId === ADMIN_CORRECTION_BEHAVIOR_ID)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .slice(0, 10);
 
@@ -57,8 +60,16 @@ export function AdminSettings({ onLock }: AdminSettingsProps) {
 
       <AdjustmentTool
         children={activeChildren}
-        onApply={(childId, delta, isGoldStar, note) => {
-          addStarAdjustment({ id: generateId(), childId, delta, isGoldStar, note, createdAt: new Date().toISOString() });
+        onApply={(childId, amount, note) => {
+          addStarEvent({
+            id: generateId(),
+            childId,
+            behaviorId: ADMIN_CORRECTION_BEHAVIOR_ID,
+            pointsAwarded: amount,
+            note,
+            createdAt: new Date().toISOString(),
+            isGoldStar: false,
+          });
         }}
       />
 
@@ -77,13 +88,7 @@ export function AdminSettings({ onLock }: AdminSettingsProps) {
                     {formatHebrewDateTime(adjustment.createdAt)}
                   </p>
                 </div>
-                <span
-                  className={
-                    adjustment.delta >= 0 ? "admin-settings__delta--positive" : "admin-settings__delta--negative"
-                  }
-                >
-                  {adjustment.delta >= 0 ? `+${adjustment.delta}` : adjustment.delta} {adjustment.isGoldStar ? "🌟" : "⭐"}
-                </span>
+                <span className="admin-settings__delta--positive">+{adjustment.pointsAwarded} ⭐</span>
               </li>
             ))}
           </ul>
@@ -252,27 +257,22 @@ export function UnlockForm({ expectedPin, onUnlock }: { expectedPin: string; onU
 
 interface AdjustmentToolProps {
   children: Child[];
-  onApply: (childId: string, delta: number, isGoldStar: boolean, note?: string) => void;
+  onApply: (childId: string, amount: number, note?: string) => void;
 }
 
 function AdjustmentTool({ children, onApply }: AdjustmentToolProps) {
   const [childId, setChildId] = useState(children.length === 1 ? children[0].id : "");
   const [amount, setAmount] = useState("");
-  const [mode, setMode] = useState<"add" | "subtract">("add");
-  const [currency, setCurrency] = useState<"regular" | "gold">("regular");
   const [note, setNote] = useState("");
   const [saved, setSaved] = useState(false);
 
   const magnitude = Number(amount);
-  const delta = mode === "subtract" ? -magnitude : magnitude;
-  const canApply = childId !== "" && amount.trim() !== "" && !Number.isNaN(magnitude) && magnitude !== 0;
+  const canApply = childId !== "" && amount.trim() !== "" && !Number.isNaN(magnitude) && magnitude > 0;
 
   function handleApply() {
     if (!canApply) return;
-    onApply(childId, delta, currency === "gold", note.trim() || undefined);
+    onApply(childId, magnitude, note.trim() || undefined);
     setAmount("");
-    setMode("add");
-    setCurrency("regular");
     setNote("");
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -281,8 +281,8 @@ function AdjustmentTool({ children, onApply }: AdjustmentToolProps) {
   return (
     <div className="settings-form">
       <p className="settings-form__hint">
-        שינוי ידני בכוכבים של ילדה — לא כפוף לתקרה היומית ואינו קשור להתנהגות מסוימת. בחרו הוספה או החסרה, והזינו
-        כמות חיובית.
+        תיקון ידני בכוכבים של ילדה — נוסף מיידית כארד, לא כפוף ליעד היומי ואינו קשור להתנהגות מסוימת. תיקוני אדמין הם
+        תמיד תוספת חיובית, אף פעם לא הפחתה.
       </p>
       <div className="form-field">
         <label htmlFor="admin-adjust-child">עבור מי?</label>
@@ -296,44 +296,6 @@ function AdjustmentTool({ children, onApply }: AdjustmentToolProps) {
             </option>
           ))}
         </select>
-      </div>
-      <div className="form-field">
-        <label>מטבע</label>
-        <div className="btn-row">
-          <button
-            type="button"
-            className={`btn ${currency === "regular" ? "btn--primary" : "btn--secondary"}`}
-            onClick={() => setCurrency("regular")}
-          >
-            ⭐ רגיל
-          </button>
-          <button
-            type="button"
-            className={`btn ${currency === "gold" ? "btn--primary" : "btn--secondary"}`}
-            onClick={() => setCurrency("gold")}
-          >
-            🌟 זהב
-          </button>
-        </div>
-      </div>
-      <div className="form-field">
-        <label>סוג שינוי</label>
-        <div className="btn-row">
-          <button
-            type="button"
-            className={`btn ${mode === "add" ? "btn--primary" : "btn--secondary"}`}
-            onClick={() => setMode("add")}
-          >
-            ➕ הוספה
-          </button>
-          <button
-            type="button"
-            className={`btn ${mode === "subtract" ? "btn--primary" : "btn--secondary"}`}
-            onClick={() => setMode("subtract")}
-          >
-            ➖ החסרה
-          </button>
-        </div>
       </div>
       <div className="form-field">
         <label htmlFor="admin-adjust-amount">כמות</label>

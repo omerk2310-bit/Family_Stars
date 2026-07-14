@@ -12,6 +12,8 @@ import { generateWeeklySentence } from "../utils/sentenceTemplates";
 import { AppShell } from "../components/layout/AppShell";
 import { EmptyState } from "../components/layout/EmptyState";
 import { ChildAvatar } from "../components/shared/ChildAvatar";
+import { useEconomyForChild } from "../economy/useEconomyForChild";
+import { TierProgressRow } from "../economy/TierProgressRow";
 import "./WeeklySummaryScreen.css";
 
 interface WeeklySummaryScreenProps {
@@ -70,6 +72,7 @@ function ChildWeeklyCard({ childId, weekStars }: { childId: string; weekStars: n
   const { children, behaviors, starEvents } = useAppData();
   const reference = new Date();
   const child = children.find((c) => c.id === childId);
+  const { state, config } = useEconomyForChild(childId);
   if (!child) return null;
 
   const topBehaviors = getTopBehaviorsThisWeek(childId, starEvents, behaviors, reference);
@@ -81,6 +84,8 @@ function ChildWeeklyCard({ childId, weekStars }: { childId: string; weekStars: n
         <ChildAvatar icon={child.icon} color={child.color} size="sm" />
         <h3>{child.displayName}</h3>
       </header>
+
+      <TierProgressRow config={config} state={state} />
 
       {topBehaviors.length === 0 ? (
         <p className="weekly-summary-screen__muted">עוד אין מספיק נתונים השבוע</p>

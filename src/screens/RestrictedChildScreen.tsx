@@ -1,27 +1,21 @@
 import { useState } from "react";
 import { useAppData } from "../state/AppDataContext";
-import type { Reward, RewardRedemption } from "../types/entities";
-import {
-  getAvailableGoldStarsForChild,
-  getAvailableStarsForChild,
-  getFamilyHeartsCurrent,
-  resolveRewardTitle,
-} from "../storage/selectors";
+import type { Reward } from "../types/entities";
+import { getFamilyHeartsCurrent } from "../storage/selectors";
 import { generateId } from "../utils/id";
 import { formatHebrewDateTime } from "../utils/format";
 import { AppShell } from "../components/layout/AppShell";
 import { EmptyState } from "../components/layout/EmptyState";
-import { StarBadge } from "../components/shared/StarBadge";
 import { HeartBadge } from "../components/shared/HeartBadge";
 import { RequestRewardModal } from "../components/modals/RequestRewardModal";
 import { UnlockForm } from "./settings/AdminSettings";
+import { useEconomyForChild } from "../economy/useEconomyForChild";
+import { useNewGrantCelebration } from "../economy/useNewGrantCelebration";
+import { TierProgressRow } from "../economy/TierProgressRow";
+import { TierCelebration } from "../economy/TierCelebration";
 import "./RestrictedChildScreen.css";
 
-const STATUS_LABELS: Record<RewardRedemption["status"], string> = {
-  pending: "⏳ ממתין לאישור",
-  approved: "✅ אושר",
-  rejected: "❌ נדחה",
-};
+const SIZE_LABELS: Record<string, string> = { small: "פרס קטן", medium: "פרס בינוני", large: "פרס גדול" };
 
 interface RestrictedChildScreenProps {
   childId: string;
@@ -29,21 +23,16 @@ interface RestrictedChildScreenProps {
 }
 
 export function RestrictedChildScreen({ childId, onResetDevice }: RestrictedChildScreenProps) {
-  const {
-    children,
-    rewards,
-    rewardRedemptions,
-    starEvents,
-    starAdjustments,
-    heartEvents,
-    settings,
-    addRewardRedemption,
-  } = useAppData();
+  const { children, rewards, rewardRedemptions, heartEvents, legacyGrants, rewardDefinitions, settings, addRewardRedemption } =
+    useAppData();
   const [activeReward, setActiveReward] = useState<Reward | null>(null);
   const [requestedMessage, setRequestedMessage] = useState(false);
   const [resettingDevice, setResettingDevice] = useState(false);
 
   const child = children.find((c) => c.id === childId);
+  const { state, grants, config } = useEconomyForChild(childId);
+  const { celebrating, dismiss } = useNewGrantCelebration(grants);
+  const celebratingTier = celebrating ? config.tiers.find((t) => t.id === celebrating) : null;
 
   if (!child) {
     return (
@@ -53,25 +42,9 @@ export function RestrictedChildScreen({ childId, onResetDevice }: RestrictedChil
     );
   }
 
-  const availableStars = getAvailableStarsForChild(childId, starEvents, starAdjustments, rewardRedemptions, rewards);
-  const availableGoldStars = getAvailableGoldStarsForChild(
-    childId,
-    starEvents,
-    starAdjustments,
-    rewardRedemptions,
-    rewards
-  );
   const familyHeartsCurrent = getFamilyHeartsCurrent(heartEvents, rewardRedemptions, rewards);
-  const activeRewards = rewards.filter((r) => !r.archived).sort((a, b) => a.order - b.order);
-  const myRequests = rewardRedemptions
-    .filter((r) => r.childId === childId)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    .slice(0, 5);
-
-  function getBalanceFor(reward: Reward): number {
-    if (reward.type === "family") return familyHeartsCurrent;
-    return reward.isGoldStar ? availableGoldStars : availableStars;
-  }
+  const familyRewards = rewards.filter((r) => r.type === "family" && !r.archived).sort((a, b) => a.order - b.order);
+  const myLegacyGrant = legacyGrants.find((g) => g.childId === childId);
 
   function handleConfirmRequest() {
     if (!activeReward) return;
@@ -90,23 +63,48 @@ export function RestrictedChildScreen({ childId, onResetDevice }: RestrictedChil
   return (
     <AppShell title={child.displayName} accent={child.color}>
       <div className="restricted-child-screen">
-        <div className="restricted-child-screen__stats">
-          <StarBadge value={availableStars} label="כוכבים זמינים" />
-          {availableGoldStars > 0 && <StarBadge value={availableGoldStars} label="כוכבי זהב" gold />}
-          <HeartBadge value={familyHeartsCurrent} label="לבבות משפחתיים" />
-        </div>
+        <TierProgressRow config={config} state={state} />
 
-        {requestedMessage && (
-          <div className="restricted-child-screen__toast">הבקשה נשלחה להורים לאישור ✓</div>
-        )}
+        <HeartBadge value={familyHeartsCurrent} label="לבבות משפחתיים" />
+
+        {requestedMessage && <div className="restricted-child-screen__toast">הבקשה נשלחה להורים לאישור ✓</div>}
 
         <section>
-          <h2 className="restricted-child-screen__section-title">פרסים לממש</h2>
-          {activeRewards.length === 0 ? (
-            <EmptyState icon="🎁" title="עדיין אין פרסים מוגדרים" />
+          <h2 className="restricted-child-screen__section-title">המתנות שלי</h2>
+          {grants.length === 0 && !myLegacyGrant ? (
+            <EmptyState icon="🎁" title="עוד אין מתנות" message="ברגע שתגיעו ליעד, המתנה תופיע כאן." />
           ) : (
+            <ul className="restricted-child-screen__requests">
+              {myLegacyGrant && (
+                <li className="restricted-child-screen__request">
+                  <div>
+                    <p className="restricted-child-screen__request-title">מתנת פרידה גדולה</p>
+                    <p className="restricted-child-screen__request-meta">{myLegacyGrant.sourceNote}</p>
+                  </div>
+                  <span>{myLegacyGrant.claimedAt ? "✅ נמסר" : "⏳ ממתין למסירה"}</span>
+                </li>
+              )}
+              {grants.map((grant) => {
+                const definition = rewardDefinitions.find((d) => d.size === grant.size);
+                return (
+                  <li key={grant.id} className="restricted-child-screen__request">
+                    <div>
+                      <p className="restricted-child-screen__request-title">{definition?.label ?? SIZE_LABELS[grant.size]}</p>
+                      <p className="restricted-child-screen__request-meta">{formatHebrewDateTime(grant.grantedAt)}</p>
+                    </div>
+                    <span>{grant.claimedAt ? "✅ נמסר" : "⏳ ממתין למסירה"}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
+        {familyRewards.length > 0 && (
+          <section>
+            <h2 className="restricted-child-screen__section-title">פרסים משפחתיים</h2>
             <div className="restricted-child-screen__rewards">
-              {activeRewards.map((reward) => (
+              {familyRewards.map((reward) => (
                 <button
                   key={reward.id}
                   type="button"
@@ -115,33 +113,12 @@ export function RestrictedChildScreen({ childId, onResetDevice }: RestrictedChil
                 >
                   <div>
                     <p className="restricted-child-screen__reward-title">{reward.title}</p>
-                    {reward.description && (
-                      <p className="restricted-child-screen__reward-desc">{reward.description}</p>
-                    )}
+                    {reward.description && <p className="restricted-child-screen__reward-desc">{reward.description}</p>}
                   </div>
-                  <span className="restricted-child-screen__reward-cost">
-                    {reward.cost} {reward.type === "family" ? "💗" : reward.isGoldStar ? "🌟" : "⭐"}
-                  </span>
+                  <span className="restricted-child-screen__reward-cost">{reward.cost} 💗</span>
                 </button>
               ))}
             </div>
-          )}
-        </section>
-
-        {myRequests.length > 0 && (
-          <section>
-            <h2 className="restricted-child-screen__section-title">הבקשות שלי</h2>
-            <ul className="restricted-child-screen__requests">
-              {myRequests.map((r) => (
-                <li key={r.id} className="restricted-child-screen__request">
-                  <div>
-                    <p className="restricted-child-screen__request-title">{resolveRewardTitle(r.rewardId, rewards)}</p>
-                    <p className="restricted-child-screen__request-meta">{formatHebrewDateTime(r.createdAt)}</p>
-                  </div>
-                  <span>{STATUS_LABELS[r.status]}</span>
-                </li>
-              ))}
-            </ul>
           </section>
         )}
 
@@ -163,12 +140,16 @@ export function RestrictedChildScreen({ childId, onResetDevice }: RestrictedChil
       {activeReward && (
         <RequestRewardModal
           reward={activeReward}
-          availableBalance={getBalanceFor(activeReward)}
+          availableBalance={familyHeartsCurrent}
           familyHeartsCurrent={familyHeartsCurrent}
           familyHeartTarget={settings.familyHeartTarget}
           onConfirm={handleConfirmRequest}
           onClose={() => setActiveReward(null)}
         />
+      )}
+
+      {celebratingTier && (
+        <TierCelebration tierId={celebratingTier.id} label={celebratingTier.label} icon={celebratingTier.icon} onDone={dismiss} />
       )}
     </AppShell>
   );

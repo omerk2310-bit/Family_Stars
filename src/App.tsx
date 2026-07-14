@@ -17,6 +17,7 @@ import { RedEventsScreen } from "./screens/RedEventsScreen";
 import { RewardsScreen } from "./screens/RewardsScreen";
 import { WeeklySummaryScreen } from "./screens/WeeklySummaryScreen";
 import { PendingApprovalsScreen } from "./screens/PendingApprovalsScreen";
+import { InstantRewardsGrantsScreen } from "./screens/InstantRewardsGrantsScreen";
 import { SettingsScreen } from "./screens/settings/SettingsScreen";
 import { AuthScreen } from "./screens/AuthScreen";
 import { RoleSelectorScreen } from "./screens/RoleSelectorScreen";
@@ -48,6 +49,8 @@ function Router() {
       return <SettingsScreen initialTab={route.tab} navigate={setRoute} />;
     case "pendingApprovals":
       return <PendingApprovalsScreen navigate={setRoute} />;
+    case "instantRewardsGrants":
+      return <InstantRewardsGrantsScreen navigate={setRoute} />;
     default:
       return null;
   }

@@ -5,13 +5,12 @@ import "./ChildCard.css";
 
 interface ChildCardProps {
   child: Child;
-  availableStars: number;
-  todayStars: number;
-  dailyCap: number;
+  bronzeEarnedToday: number;
+  bronzeTarget: number;
   onClick: () => void;
 }
 
-export function ChildCard({ child, availableStars, todayStars, dailyCap, onClick }: ChildCardProps) {
+export function ChildCard({ child, bronzeEarnedToday, bronzeTarget, onClick }: ChildCardProps) {
   return (
     <button
       type="button"
@@ -21,8 +20,9 @@ export function ChildCard({ child, availableStars, todayStars, dailyCap, onClick
     >
       <ChildAvatar icon={child.icon} color={child.color} size="lg" />
       <span className="child-card__name">{child.displayName}</span>
-      <span className="child-card__stars">⭐ {availableStars} כוכבים זמינים</span>
-      <span className="child-card__today">היום: {todayStars} מתוך {dailyCap}</span>
+      <span className="child-card__today">
+        🥉 היום: {bronzeEarnedToday} מתוך {bronzeTarget}
+      </span>
     </button>
   );
 }

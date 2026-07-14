@@ -4,6 +4,7 @@ export type SettingsTab =
   | "heartTypes"
   | "redTypes"
   | "rewards"
+  | "economy"
   | "global"
   | "data"
   | "admin";
@@ -16,4 +17,5 @@ export type Route =
   | { screen: "rewards" }
   | { screen: "weeklySummary" }
   | { screen: "settings"; tab?: SettingsTab }
-  | { screen: "pendingApprovals" };
+  | { screen: "pendingApprovals" }
+  | { screen: "instantRewardsGrants" };

@@ -2,13 +2,8 @@ import { useState } from "react";
 import { useAppData } from "../state/AppDataContext";
 import { useToday } from "../hooks/useToday";
 import type { Route } from "../types/routes";
-import {
-  getActiveChildren,
-  getAvailableStarsForChild,
-  getFamilyHeartsCurrent,
-  getPendingRewardRedemptions,
-  getTodayStarsForChild,
-} from "../storage/selectors";
+import { getActiveChildren, getFamilyHeartsCurrent, getPendingRewardRedemptions } from "../storage/selectors";
+import { getEconomyStateForChild, getGrantsForChild } from "../economy/economySelectors";
 import { formatHebrewDate } from "../utils/format";
 import { ChildCard } from "../components/shared/ChildCard";
 import { HeartBadge } from "../components/shared/HeartBadge";
@@ -22,13 +17,24 @@ interface HomeScreenProps {
 }
 
 export function HomeScreen({ navigate }: HomeScreenProps) {
-  const { children, starEvents, starAdjustments, heartEvents, rewardRedemptions, rewards, settings } = useAppData();
+  const { children, starEvents, heartEvents, rewardRedemptions, rewards, rewardClaims, legacyGrants, settings } = useAppData();
   const today = useToday();
   const [pickingChildFor, setPickingChildFor] = useState<"stars" | null>(null);
 
   const activeChildren = getActiveChildren(children);
   const familyHeartsCurrent = getFamilyHeartsCurrent(heartEvents, rewardRedemptions, rewards);
   const pendingCount = getPendingRewardRedemptions(rewardRedemptions).length;
+
+  const now = new Date();
+  const pendingGrantsCount =
+    activeChildren.reduce(
+      (sum, child) =>
+        sum +
+        getGrantsForChild(child.id, starEvents, settings.economyStartsAt, settings.economyConfig, rewardClaims, now).filter(
+          (g) => g.claimedAt === null
+        ).length,
+      0
+    ) + legacyGrants.filter((g) => !g.claimedAt).length;
 
   function handleAddStarsClick() {
     if (activeChildren.length === 0) return;
@@ -59,6 +65,14 @@ export function HomeScreen({ navigate }: HomeScreenProps) {
         onClick={() => navigate({ screen: "pendingApprovals" })}
       >
         📋 בקשות ממתינות{pendingCount > 0 ? ` (${pendingCount})` : ""}
+      </button>
+
+      <button
+        type="button"
+        className={`btn ${pendingGrantsCount > 0 ? "btn--amber" : "btn--secondary"} home-screen__approvals-btn`}
+        onClick={() => navigate({ screen: "instantRewardsGrants" })}
+      >
+        🎁 מתנות לחלוקה{pendingGrantsCount > 0 ? ` (${pendingGrantsCount})` : ""}
       </button>
 
       <section className="home-screen__actions">
@@ -94,22 +108,24 @@ export function HomeScreen({ navigate }: HomeScreenProps) {
           />
         ) : (
           <div className="home-screen__children-grid">
-            {activeChildren.map((child) => (
-              <ChildCard
-                key={child.id}
-                child={child}
-                availableStars={getAvailableStarsForChild(
-                  child.id,
-                  starEvents,
-                  starAdjustments,
-                  rewardRedemptions,
-                  rewards
-                )}
-                todayStars={getTodayStarsForChild(child.id, starEvents, today)}
-                dailyCap={settings.dailyStarCap}
-                onClick={() => navigate({ screen: "child", childId: child.id })}
-              />
-            ))}
+            {activeChildren.map((child) => {
+              const state = getEconomyStateForChild(
+                child.id,
+                starEvents,
+                settings.economyStartsAt,
+                settings.economyConfig,
+                now
+              );
+              return (
+                <ChildCard
+                  key={child.id}
+                  child={child}
+                  bronzeEarnedToday={state.bronze.earned}
+                  bronzeTarget={state.bronze.target}
+                  onClick={() => navigate({ screen: "child", childId: child.id })}
+                />
+              );
+            })}
           </div>
         )}
       </section>

@@ -1,21 +1,18 @@
 import { useState } from "react";
 import { useAppData } from "../state/AppDataContext";
-import { useToday } from "../hooks/useToday";
 import type { Route } from "../types/routes";
 import type { Behavior } from "../types/entities";
-import {
-  getActiveBehaviorsForChild,
-  getAvailableGoldStarsForChild,
-  getAvailableStarsForChild,
-  getLifetimeXpForChild,
-  getTodayStarsForChild,
-} from "../storage/selectors";
+import { getActiveBehaviorsForChild } from "../storage/selectors";
 import { generateId } from "../utils/id";
 import { AppShell } from "../components/layout/AppShell";
 import { EmptyState } from "../components/layout/EmptyState";
-import { StarBadge } from "../components/shared/StarBadge";
 import { BehaviorButton } from "../components/shared/BehaviorButton";
 import { LogStarEventModal } from "../components/modals/LogStarEventModal";
+import { useEconomyForChild } from "../economy/useEconomyForChild";
+import { useNewGrantCelebration } from "../economy/useNewGrantCelebration";
+import { TierProgressRow } from "../economy/TierProgressRow";
+import { TierCelebration } from "../economy/TierCelebration";
+import { playStarTick, vibrateShort } from "../economy/audio";
 import "./ChildScreen.css";
 
 interface ChildScreenProps {
@@ -24,12 +21,13 @@ interface ChildScreenProps {
 }
 
 export function ChildScreen({ childId, navigate }: ChildScreenProps) {
-  const { children, behaviors, starEvents, starAdjustments, rewardRedemptions, rewards, settings, addStarEvent } =
-    useAppData();
-  const today = useToday();
+  const { children, behaviors, addStarEvent } = useAppData();
   const [activeBehavior, setActiveBehavior] = useState<Behavior | null>(null);
 
   const child = children.find((c) => c.id === childId);
+  const { state, grants, config } = useEconomyForChild(childId);
+  const { celebrating, dismiss } = useNewGrantCelebration(grants);
+  const celebratingTier = celebrating ? config.tiers.find((t) => t.id === celebrating) : null;
 
   if (!child) {
     return (
@@ -39,55 +37,30 @@ export function ChildScreen({ childId, navigate }: ChildScreenProps) {
     );
   }
 
-  const todayStars = getTodayStarsForChild(child.id, starEvents, today);
-  const availableStars = getAvailableStarsForChild(child.id, starEvents, starAdjustments, rewardRedemptions, rewards);
-  const availableGoldStars = getAvailableGoldStarsForChild(
-    child.id,
-    starEvents,
-    starAdjustments,
-    rewardRedemptions,
-    rewards
-  );
-  const lifetimeXp = getLifetimeXpForChild(child.id, starEvents, starAdjustments);
   const activeBehaviors = getActiveBehaviorsForChild(child.id, behaviors);
-  const atDailyCap = todayStars >= settings.dailyStarCap;
 
   function handleConfirm(points: number, note?: string) {
     if (!activeBehavior) return;
-    const remaining = Math.max(0, settings.dailyStarCap - todayStars);
-    const awarded = Math.min(points, remaining);
     setActiveBehavior(null);
-    if (awarded <= 0) return;
     addStarEvent({
       id: generateId(),
       childId: child!.id,
       behaviorId: activeBehavior.id,
-      pointsAwarded: awarded,
+      pointsAwarded: points,
       note,
       createdAt: new Date().toISOString(),
-      isGoldStar: activeBehavior.isGoldStar ?? false,
+      isGoldStar: false,
     });
+    // Bronze earned-so-far-today (after this event) drives the pitch-ladder
+    // step — a bigger behavior naturally jumps further up the scale.
+    playStarTick(state.bronze.earned + points);
+    vibrateShort();
   }
 
   return (
     <AppShell title={child.displayName} onBack={() => navigate({ screen: "home" })} accent={child.color}>
       <div className="child-screen">
-        <div className="child-screen__stats">
-          <StarBadge value={availableStars} label="כוכבים זמינים" />
-          {availableGoldStars > 0 && <StarBadge value={availableGoldStars} label="כוכבי זהב" gold />}
-          <div className="child-screen__stat">
-            <span className="child-screen__stat-value">{todayStars} / {settings.dailyStarCap}</span>
-            <span className="child-screen__stat-label">כוכבים היום</span>
-          </div>
-          <div className="child-screen__stat">
-            <span className="child-screen__stat-value">{lifetimeXp}</span>
-            <span className="child-screen__stat-label">ניסיון מצטבר</span>
-          </div>
-        </div>
-
-        {atDailyCap && (
-          <div className="child-screen__cap-message">הגעת למקסימום היומי. איזה יום חזק! 🌟</div>
-        )}
+        <TierProgressRow config={config} state={state} />
 
         {activeBehaviors.length === 0 ? (
           <EmptyState
@@ -107,12 +80,7 @@ export function ChildScreen({ childId, navigate }: ChildScreenProps) {
         ) : (
           <div className="child-screen__behaviors">
             {activeBehaviors.map((behavior) => (
-              <BehaviorButton
-                key={behavior.id}
-                behavior={behavior}
-                disabled={atDailyCap}
-                onClick={() => setActiveBehavior(behavior)}
-              />
+              <BehaviorButton key={behavior.id} behavior={behavior} onClick={() => setActiveBehavior(behavior)} />
             ))}
           </div>
         )}
@@ -124,6 +92,10 @@ export function ChildScreen({ childId, navigate }: ChildScreenProps) {
           onConfirm={handleConfirm}
           onClose={() => setActiveBehavior(null)}
         />
+      )}
+
+      {celebratingTier && (
+        <TierCelebration tierId={celebratingTier.id} label={celebratingTier.label} icon={celebratingTier.icon} onDone={dismiss} />
       )}
     </AppShell>
   );
