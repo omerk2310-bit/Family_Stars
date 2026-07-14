@@ -1,0 +1,42 @@
+.instant-rewards-migration {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.instant-rewards-migration__intro {
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.instant-rewards-migration__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.instant-rewards-migration__card {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.instant-rewards-migration__card-title {
+  font-weight: 700;
+}
+
+.instant-rewards-migration__card-balance {
+  display: flex;
+  gap: var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.instant-rewards-migration__granted {
+  color: var(--color-success, #1a7f4b);
+  font-weight: 600;
+}

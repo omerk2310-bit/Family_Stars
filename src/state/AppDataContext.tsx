@@ -14,13 +14,18 @@ import type {
   Entity,
   HeartEvent,
   HeartEventType,
+  LegacyGrant,
   RedEvent,
   RedEventType,
   Reward,
+  RewardClaim,
+  RewardDefinition,
   RewardRedemption,
   StarAdjustment,
   StarEvent,
 } from "../types/entities";
+import type { RewardGrant } from "../economy/types";
+import { DEFAULT_ECONOMY_CONFIG } from "../economy/defaultConfig";
 import { KEYS } from "../storage/keys";
 import { supabase } from "../storage/supabaseClient";
 import { TABLE_CONFIGS, settingsFromRow, settingsToRow, type TableConfig } from "../storage/tableMap";
@@ -36,7 +41,14 @@ import {
 
 initializeStorage();
 
-const DEFAULT_SETTINGS: AppSettings = { dailyStarCap: 15, dailyHeartCap: 2, familyHeartTarget: 10 };
+const DEFAULT_SETTINGS: AppSettings = {
+  dailyStarCap: 15,
+  dailyHeartCap: 2,
+  familyHeartTarget: 10,
+  economyConfig: DEFAULT_ECONOMY_CONFIG,
+  economyStartsAt: new Date(0).toISOString(),
+  economyMigrationShown: false,
+};
 
 function useCollectionState<T extends Entity>(key: string) {
   const config = TABLE_CONFIGS[key] as unknown as TableConfig<T>;
@@ -139,6 +151,9 @@ interface AppDataContextValue {
   redEvents: RedEvent[];
   rewards: Reward[];
   rewardRedemptions: RewardRedemption[];
+  rewardClaims: RewardClaim[];
+  legacyGrants: LegacyGrant[];
+  rewardDefinitions: RewardDefinition[];
   settings: AppSettings;
 
   addChild: (child: Child) => void;
@@ -172,6 +187,13 @@ interface AppDataContextValue {
   addRewardRedemption: (redemption: RewardRedemption) => void;
   updateRewardRedemptionStatus: (id: string, status: RewardRedemption["status"]) => void;
 
+  claimRewardGrant: (grant: RewardGrant) => void;
+  claimLegacyGrant: (id: string) => void;
+  addLegacyGrant: (grant: LegacyGrant) => void;
+
+  addRewardDefinition: (definition: RewardDefinition) => void;
+  updateRewardDefinition: (definition: RewardDefinition) => void;
+
   updateSettings: (settings: AppSettings) => void;
 
   exportData: () => void;
@@ -192,6 +214,9 @@ export function AppDataProvider({ children: reactChildren }: { children: ReactNo
   const redEventsState = useCollectionState<RedEvent>(KEYS.redEvents);
   const rewardsState = useCollectionState<Reward>(KEYS.rewards);
   const rewardRedemptionsState = useCollectionState<RewardRedemption>(KEYS.rewardRedemptions);
+  const rewardClaimsState = useCollectionState<RewardClaim>(KEYS.rewardClaims);
+  const legacyGrantsState = useCollectionState<LegacyGrant>(KEYS.legacyGrants);
+  const rewardDefinitionsState = useCollectionState<RewardDefinition>(KEYS.rewardDefinitions);
 
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [settingsLoading, setSettingsLoading] = useState(true);
@@ -278,6 +303,34 @@ export function AppDataProvider({ children: reactChildren }: { children: ReactNo
     [rewardRedemptionsState]
   );
 
+  // computeGrants() (src/economy/engine.ts) always returns claimedAt: null —
+  // it's pure and derived purely from StarEvent history. Marking a grant
+  // delivered just writes one row into reward_claims, keyed by the grant's
+  // own deterministic id; a redundant tap (or a race between two devices)
+  // is harmless since we skip writing if a claim already exists.
+  const claimRewardGrant = useCallback(
+    (grant: RewardGrant) => {
+      if (rewardClaimsState.items.some((c) => c.id === grant.id)) return;
+      rewardClaimsState.add({
+        id: grant.id,
+        childId: grant.childId,
+        tierId: grant.tierId,
+        windowStart: grant.windowStart,
+        claimedAt: new Date().toISOString(),
+      });
+    },
+    [rewardClaimsState]
+  );
+
+  const claimLegacyGrant = useCallback(
+    (id: string) => {
+      const grant = legacyGrantsState.items.find((g) => g.id === id);
+      if (!grant) return;
+      legacyGrantsState.update({ ...grant, claimedAt: new Date().toISOString() });
+    },
+    [legacyGrantsState]
+  );
+
   const updateSettings = useCallback((next: AppSettings) => {
     setSettings(next);
     supabase
@@ -314,6 +367,9 @@ export function AppDataProvider({ children: reactChildren }: { children: ReactNo
     redEventsState.loading ||
     rewardsState.loading ||
     rewardRedemptionsState.loading ||
+    rewardClaimsState.loading ||
+    legacyGrantsState.loading ||
+    rewardDefinitionsState.loading ||
     settingsLoading;
 
   const value = useMemo<AppDataContextValue>(
@@ -330,6 +386,9 @@ export function AppDataProvider({ children: reactChildren }: { children: ReactNo
       redEvents: redEventsState.items,
       rewards: rewardsState.items,
       rewardRedemptions: rewardRedemptionsState.items,
+      rewardClaims: rewardClaimsState.items,
+      legacyGrants: legacyGrantsState.items,
+      rewardDefinitions: rewardDefinitionsState.items,
       settings,
 
       addChild: childrenState.add,
@@ -363,6 +422,13 @@ export function AppDataProvider({ children: reactChildren }: { children: ReactNo
       addRewardRedemption: rewardRedemptionsState.add,
       updateRewardRedemptionStatus,
 
+      claimRewardGrant,
+      claimLegacyGrant,
+      addLegacyGrant: legacyGrantsState.add,
+
+      addRewardDefinition: rewardDefinitionsState.add,
+      updateRewardDefinition: rewardDefinitionsState.update,
+
       updateSettings,
 
       exportData,
@@ -381,12 +447,17 @@ export function AppDataProvider({ children: reactChildren }: { children: ReactNo
       redEventsState,
       rewardsState,
       rewardRedemptionsState,
+      rewardClaimsState,
+      legacyGrantsState,
+      rewardDefinitionsState,
       settings,
       reorderChildren,
       reorderRewards,
       reorderBehaviors,
       linkRepairToRedEvent,
       updateRewardRedemptionStatus,
+      claimRewardGrant,
+      claimLegacyGrant,
       updateSettings,
       exportData,
       importData,

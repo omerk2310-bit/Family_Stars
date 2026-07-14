@@ -5,13 +5,17 @@ import type {
   Entity,
   HeartEvent,
   HeartEventType,
+  LegacyGrant,
   RedEvent,
   RedEventType,
   Reward,
+  RewardClaim,
+  RewardDefinition,
   RewardRedemption,
   StarAdjustment,
   StarEvent,
 } from "../types/entities";
+import { DEFAULT_ECONOMY_CONFIG } from "../economy/defaultConfig";
 import { KEYS } from "./keys";
 
 export interface TableConfig<T extends Entity> {
@@ -236,6 +240,62 @@ const rewardRedemptionConfig: TableConfig<RewardRedemption> = {
   }),
 };
 
+const rewardClaimConfig: TableConfig<RewardClaim> = {
+  table: "reward_claims",
+  toRow: (c) => ({
+    id: c.id,
+    child_id: c.childId,
+    tier_id: c.tierId,
+    window_start: c.windowStart,
+    claimed_at: c.claimedAt,
+  }),
+  fromRow: (r) => ({
+    id: r.id as string,
+    childId: r.child_id as string,
+    tierId: r.tier_id as string,
+    windowStart: r.window_start as string,
+    claimedAt: r.claimed_at as string,
+  }),
+};
+
+const legacyGrantConfig: TableConfig<LegacyGrant> = {
+  table: "legacy_grants",
+  toRow: (g) => ({
+    id: g.id,
+    child_id: g.childId,
+    size: g.size,
+    source_note: g.sourceNote,
+    granted_at: g.grantedAt,
+    claimed_at: g.claimedAt ?? null,
+  }),
+  fromRow: (r) => ({
+    id: r.id as string,
+    childId: r.child_id as string,
+    size: r.size as LegacyGrant["size"],
+    sourceNote: r.source_note as string,
+    grantedAt: r.granted_at as string,
+    claimedAt: (r.claimed_at as string | null) ?? undefined,
+  }),
+};
+
+const rewardDefinitionConfig: TableConfig<RewardDefinition> = {
+  table: "reward_definitions",
+  toRow: (d) => ({
+    id: d.id,
+    size: d.size,
+    label: d.label,
+    description: d.description,
+    examples: d.examples,
+  }),
+  fromRow: (r) => ({
+    id: r.id as string,
+    size: r.size as RewardDefinition["size"],
+    label: r.label as string,
+    description: r.description as string,
+    examples: (r.examples as string[] | null) ?? [],
+  }),
+};
+
 // Each config's toRow/fromRow is only ever invoked with its own entity type
 // (looked up by the matching KEYS.* string), so the variance TS flags here is
 // not reachable in practice — cast through `unknown` to store them uniformly.
@@ -250,6 +310,9 @@ export const TABLE_CONFIGS: Record<string, TableConfig<Entity>> = {
   [KEYS.redEvents]: redEventConfig as unknown as TableConfig<Entity>,
   [KEYS.rewards]: rewardConfig as unknown as TableConfig<Entity>,
   [KEYS.rewardRedemptions]: rewardRedemptionConfig as unknown as TableConfig<Entity>,
+  [KEYS.rewardClaims]: rewardClaimConfig as unknown as TableConfig<Entity>,
+  [KEYS.legacyGrants]: legacyGrantConfig as unknown as TableConfig<Entity>,
+  [KEYS.rewardDefinitions]: rewardDefinitionConfig as unknown as TableConfig<Entity>,
 };
 
 export function settingsToRow(s: AppSettings): Record<string, unknown> {
@@ -258,14 +321,21 @@ export function settingsToRow(s: AppSettings): Record<string, unknown> {
     daily_heart_cap: s.dailyHeartCap,
     family_heart_target: s.familyHeartTarget,
     admin_pin: s.adminPin ?? null,
+    economy_config: s.economyConfig,
+    economy_starts_at: s.economyStartsAt,
+    economy_migration_shown: s.economyMigrationShown,
   };
 }
 
 export function settingsFromRow(r: Record<string, unknown>): AppSettings {
+  const economyConfig = r.economy_config as AppSettings["economyConfig"] | null | undefined;
   return {
     dailyStarCap: r.daily_star_cap as number,
     dailyHeartCap: r.daily_heart_cap as number,
     familyHeartTarget: r.family_heart_target as number,
     adminPin: (r.admin_pin as string | null) ?? undefined,
+    economyMigrationShown: (r.economy_migration_shown as boolean | null) ?? false,
+    economyConfig: economyConfig && economyConfig.tiers?.length ? economyConfig : DEFAULT_ECONOMY_CONFIG,
+    economyStartsAt: (r.economy_starts_at as string | null) ?? new Date(0).toISOString(),
   };
 }

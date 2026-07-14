@@ -21,6 +21,7 @@ import { SettingsScreen } from "./screens/settings/SettingsScreen";
 import { AuthScreen } from "./screens/AuthScreen";
 import { RoleSelectorScreen } from "./screens/RoleSelectorScreen";
 import { RestrictedChildScreen } from "./screens/RestrictedChildScreen";
+import { InstantRewardsMigrationScreen } from "./screens/InstantRewardsMigrationScreen";
 import { AppShell } from "./components/layout/AppShell";
 
 function Router() {
@@ -53,7 +54,7 @@ function Router() {
 }
 
 function DeviceRoleGate() {
-  const { children } = useAppData();
+  const { children, settings } = useAppData();
   const [role, setRole] = useState<DeviceRole>(() => {
     const deepLink = parseDeepLinkRole(window.location.search);
     if (deepLink) {
@@ -99,6 +100,9 @@ function DeviceRoleGate() {
           startInPinMode
         />
       );
+    }
+    if (!settings.economyMigrationShown) {
+      return <InstantRewardsMigrationScreen onDone={() => undefined} />;
     }
     return (
       <div className="device-role-gate__parent-wrapper">

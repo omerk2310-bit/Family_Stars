@@ -14,6 +14,7 @@ export function GlobalSettingsForm() {
     const clampedHeartCap = Math.max(1, parseIntOrFallback(dailyHeartCap, settings.dailyHeartCap));
     const clampedHeartTarget = Math.max(1, parseIntOrFallback(familyHeartTarget, settings.familyHeartTarget));
     updateSettings({
+      ...settings,
       dailyStarCap: clampedStarCap,
       dailyHeartCap: clampedHeartCap,
       familyHeartTarget: clampedHeartTarget,

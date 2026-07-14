@@ -1,3 +1,5 @@
+import type { EconomyConfig, RewardSize } from "../economy/types";
+
 export interface Child {
   id: string;
   name: string;
@@ -105,8 +107,45 @@ export interface AppSettings {
   dailyHeartCap: number;
   familyHeartTarget: number;
   adminPin?: string;
+  economyConfig: EconomyConfig;
+  economyStartsAt: string; // set once, server-side, when the cutover migration ran
+  economyMigrationShown: boolean; // set once the parent has seen/dismissed the one-time migration screen
 }
 
 export interface Entity {
   id: string;
+}
+
+// Presence of a row in reward_claims means "a parent marked this grant
+// delivered" — id matches the deterministic RewardGrant.id the pure engine
+// (src/economy/engine.ts) produces, so this table only ever stores claims,
+// never the grants themselves (those are always re-derived from StarEvent
+// history, never persisted as their own row).
+export interface RewardClaim {
+  id: string;
+  childId: string;
+  tierId: string;
+  windowStart: string;
+  claimedAt: string;
+}
+
+// One-time "closing gift" created during the instant-rewards migration, for
+// a child who had a meaningful balance under the old accumulation model.
+// Deliberately separate from RewardClaim/the engine — this isn't derived
+// from any tier logic, it's a one-off fairness gesture on cutover.
+export interface LegacyGrant {
+  id: string; // childId — at most one legacy grant per child, ever
+  childId: string;
+  size: RewardSize;
+  sourceNote: string;
+  grantedAt: string;
+  claimedAt?: string;
+}
+
+export interface RewardDefinition {
+  id: string; // always equal to size — kept as its own field to satisfy Entity
+  size: RewardSize;
+  label: string;
+  description: string;
+  examples: string[];
 }

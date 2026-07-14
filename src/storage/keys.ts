@@ -9,6 +9,9 @@ export const KEYS = {
   redEvents: "hp.redEvents",
   rewards: "hp.rewards",
   rewardRedemptions: "hp.rewardRedemptions",
+  rewardClaims: "hp.rewardClaims",
+  legacyGrants: "hp.legacyGrants",
+  rewardDefinitions: "hp.rewardDefinitions",
   settings: "hp.settings",
   schemaVersion: "hp.schemaVersion",
 } as const;
