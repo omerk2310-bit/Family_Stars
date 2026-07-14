@@ -7,6 +7,7 @@ import { BehaviorsSettings } from "./BehaviorsSettings";
 import { HeartTypesSettings } from "./HeartTypesSettings";
 import { RedTypesSettings } from "./RedTypesSettings";
 import { RewardsSettings } from "./RewardsSettings";
+import { EconomySettings } from "./EconomySettings";
 import { GlobalSettingsForm } from "./GlobalSettingsForm";
 import { DataManagementSettings } from "./DataManagementSettings";
 import { AdminSettings, SetupPinForm, UnlockForm } from "./AdminSettings";
@@ -23,6 +24,7 @@ const TABS: { id: SettingsTab; label: string }[] = [
   { id: "heartTypes", label: "לבבות" },
   { id: "redTypes", label: "אירועים אדומים" },
   { id: "rewards", label: "פרסים" },
+  { id: "economy", label: "כלכלה" },
   { id: "global", label: "הגדרות כלליות" },
   { id: "data", label: "ניהול נתונים" },
   { id: "admin", label: "עריכת כוכבים" },
@@ -76,6 +78,7 @@ export function SettingsScreen({ initialTab, navigate }: SettingsScreenProps) {
           {tab === "heartTypes" && <HeartTypesSettings />}
           {tab === "redTypes" && <RedTypesSettings />}
           {tab === "rewards" && <RewardsSettings />}
+          {tab === "economy" && <EconomySettings />}
           {tab === "global" && <GlobalSettingsForm />}
           {tab === "data" && <DataManagementSettings />}
           {tab === "admin" && <AdminSettings onLock={() => setUnlocked(false)} />}
