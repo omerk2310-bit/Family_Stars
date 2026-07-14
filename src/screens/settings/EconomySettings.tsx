@@ -19,6 +19,7 @@ export function EconomySettings() {
     Object.fromEntries(sortedTiers.map((t) => [t.id, t.source.type === "convert" ? String(t.source.rate) : ""]))
   );
   const [windows, setWindows] = useState(() => Object.fromEntries(sortedTiers.map((t) => [t.id, t.window])));
+  const [capped, setCapped] = useState(() => Object.fromEntries(sortedTiers.map((t) => [t.id, t.capped])));
   const [dailyAt, setDailyAt] = useState(economyConfig.resets.dailyAt);
   const [weekStartsOn, setWeekStartsOn] = useState(economyConfig.resets.weekStartsOn);
   const [monthStartsOnDay, setMonthStartsOnDay] = useState(String(economyConfig.resets.monthStartsOnDay));
@@ -30,6 +31,7 @@ export function EconomySettings() {
       label: labels[tier.id]?.trim() || tier.label,
       target: Math.max(1, parseIntOrFallback(targets[tier.id], tier.target)),
       window: (windows[tier.id] as WindowKind) ?? tier.window,
+      capped: capped[tier.id] ?? tier.capped,
       source:
         tier.source.type === "convert"
           ? { ...tier.source, rate: Math.max(1, parseIntOrFallback(rates[tier.id], tier.source.rate)) }
@@ -92,6 +94,16 @@ export function EconomySettings() {
               ))}
             </select>
           </div>
+          {tier.source.type === "behavior" && (
+            <label className="settings-form__row">
+              <input
+                type="checkbox"
+                checked={capped[tier.id] ?? false}
+                onChange={(e) => setCapped((prev) => ({ ...prev, [tier.id]: e.target.checked }))}
+              />
+              היעד הוא גם תקרה (לא ניתן לעבור אותו באותו חלון)
+            </label>
+          )}
           {tier.source.type === "convert" && (
             <div className="form-field">
               <label htmlFor={`economy-rate-${tier.id}`}>

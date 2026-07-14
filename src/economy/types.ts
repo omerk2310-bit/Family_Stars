@@ -16,6 +16,12 @@ export interface TierConfig {
   consumesSource: boolean;
   rolloverRemainder: boolean;
   order: number;
+  // When true, the target also acts as a hard ceiling for this tier: once
+  // reached, no further behavior-driven logging is allowed for the rest of
+  // the window (only meaningful for behavior-source tiers — enforced at
+  // logging time, not by the engine itself, since the engine only derives
+  // totals from events that already exist).
+  capped: boolean;
 }
 
 export interface EconomyResets {

@@ -228,6 +228,7 @@ describe("computeGrants", () => {
           window: "monthly",
           target: 1,
           reward: "large",
+          capped: false,
           consumesSource: false,
           rolloverRemainder: false,
           order: 3,

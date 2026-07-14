@@ -14,6 +14,7 @@ export const DEFAULT_ECONOMY_CONFIG: EconomyConfig = {
       consumesSource: false,
       rolloverRemainder: false,
       order: 0,
+      capped: true,
     },
     {
       id: "silver",
@@ -27,6 +28,7 @@ export const DEFAULT_ECONOMY_CONFIG: EconomyConfig = {
       consumesSource: false,
       rolloverRemainder: false,
       order: 1,
+      capped: false,
     },
     {
       id: "gold",
@@ -40,6 +42,7 @@ export const DEFAULT_ECONOMY_CONFIG: EconomyConfig = {
       consumesSource: false,
       rolloverRemainder: false,
       order: 2,
+      capped: false,
     },
   ],
   resets: {
