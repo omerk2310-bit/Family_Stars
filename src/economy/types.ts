@@ -1,0 +1,64 @@
+export type TierId = string;
+export type WindowKind = "daily" | "weekly" | "monthly";
+export type RewardSize = "small" | "medium" | "large";
+
+export type TierSource = { type: "behavior" } | { type: "convert"; from: TierId; rate: number };
+
+export interface TierConfig {
+  id: TierId;
+  label: string;
+  icon: string;
+  color: string;
+  source: TierSource;
+  window: WindowKind;
+  target: number;
+  reward: RewardSize;
+  consumesSource: boolean;
+  rolloverRemainder: boolean;
+  order: number;
+}
+
+export interface EconomyResets {
+  dailyAt: string; // "HH:MM", local time
+  weekStartsOn: number; // 0 = Sunday
+  monthStartsOnDay: number; // 1-31, clamped per-month
+}
+
+export interface EconomyConfig {
+  tiers: TierConfig[];
+  resets: EconomyResets;
+}
+
+// Engine-internal event shape — a thin, purpose-built contract for the pure
+// engine functions. The app's real StarEvent (src/types/entities.ts) is
+// adapted into this shape by the caller (see economySelectors.ts), since the
+// two types serve different layers and don't need to be the same interface.
+export interface EngineStarEvent {
+  id: string;
+  childId: string;
+  behaviorId: string;
+  tierId: TierId;
+  amount: number;
+  timestamp: string; // ISO
+  source: "parent" | "child" | "admin";
+}
+
+export interface TierState {
+  tierId: TierId;
+  earned: number;
+  remainder: number;
+  target: number;
+  targetReachedAt: string | null;
+  windowStart: string;
+  windowEnd: string;
+}
+
+export interface RewardGrant {
+  id: string;
+  childId: string;
+  tierId: TierId;
+  size: RewardSize;
+  windowStart: string;
+  grantedAt: string;
+  claimedAt: string | null;
+}
