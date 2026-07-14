@@ -1,18 +1,15 @@
 import { useState } from "react";
 import { useAppData } from "../../state/AppDataContext";
-import type { Reward, RewardType } from "../../types/entities";
+import type { Reward } from "../../types/entities";
 import { generateId } from "../../utils/id";
 import { parseIntOrFallback, stripNonDigits } from "../../utils/numericInput";
 import { EntityListEditor } from "../../components/shared/EntityListEditor";
 import { Modal } from "../../components/shared/Modal";
 import { ConfirmDialog } from "../../components/shared/ConfirmDialog";
 
-const TYPE_LABELS: Record<RewardType, string> = {
-  small: "פרס קטן (כוכבים)",
-  medium: "פרס בינוני (כוכבים)",
-  family: "פרס משפחתי (לבבות)",
-};
-
+// Personal (small/medium) rewards are retired in favor of the instant
+// bronze/silver/gold tier system — this form now only manages the family-
+// shared reward track, which stays untouched by that pivot.
 export function RewardsSettings() {
   const { rewards, addReward, updateReward, archiveReward, reorderRewards } = useAppData();
   const [editing, setEditing] = useState<Reward | "new" | null>(null);
@@ -21,9 +18,6 @@ export function RewardsSettings() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [cost, setCost] = useState("10");
-  const [type, setType] = useState<RewardType>("small");
-  const [requiresApproval, setRequiresApproval] = useState(false);
-  const [isGoldStar, setIsGoldStar] = useState(false);
 
   function openEdit(reward: Reward | "new") {
     setEditing(reward);
@@ -31,23 +25,16 @@ export function RewardsSettings() {
       setTitle("");
       setDescription("");
       setCost("10");
-      setType("small");
-      setRequiresApproval(false);
-      setIsGoldStar(false);
     } else {
       setTitle(reward.title);
       setDescription(reward.description ?? "");
       setCost(String(reward.cost));
-      setType(reward.type);
-      setRequiresApproval(reward.requiresParentApproval);
-      setIsGoldStar(reward.isGoldStar ?? false);
     }
   }
 
   function handleSave() {
     if (!title.trim()) return;
     const clampedCost = Math.max(1, parseIntOrFallback(cost, 1));
-    const goldStar = type === "family" ? false : isGoldStar;
     if (editing === "new") {
       const maxOrder = rewards.reduce((m, r) => Math.max(m, r.order), -1);
       addReward({
@@ -55,10 +42,9 @@ export function RewardsSettings() {
         title: title.trim(),
         description: description.trim() || undefined,
         cost: clampedCost,
-        type,
-        requiresParentApproval: requiresApproval,
+        type: "family",
+        requiresParentApproval: true,
         order: maxOrder + 1,
-        isGoldStar: goldStar,
       });
     } else if (editing) {
       updateReward({
@@ -66,9 +52,6 @@ export function RewardsSettings() {
         title: title.trim(),
         description: description.trim() || undefined,
         cost: clampedCost,
-        type,
-        requiresParentApproval: requiresApproval,
-        isGoldStar: goldStar,
       });
     }
     setEditing(null);
@@ -87,13 +70,8 @@ export function RewardsSettings() {
         onReorder={reorderRewards}
         renderItem={(reward) => (
           <div>
-            <p style={{ fontWeight: 700 }}>
-              {reward.isGoldStar ? "🌟 " : ""}
-              {reward.title}
-            </p>
-            <p style={{ fontSize: "0.85rem", color: "var(--color-text-muted)" }}>
-              {TYPE_LABELS[reward.type]} · {reward.cost}
-            </p>
+            <p style={{ fontWeight: 700 }}>{reward.title}</p>
+            <p style={{ fontSize: "0.85rem", color: "var(--color-text-muted)" }}>💗 {reward.cost} לבבות</p>
           </div>
         )}
       />
@@ -117,17 +95,7 @@ export function RewardsSettings() {
             <textarea id="reward-desc" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
           </div>
           <div className="form-field">
-            <label htmlFor="reward-type">סוג פרס</label>
-            <select id="reward-type" value={type} onChange={(e) => setType(e.target.value as RewardType)}>
-              {(Object.keys(TYPE_LABELS) as RewardType[]).map((t) => (
-                <option key={t} value={t}>
-                  {TYPE_LABELS[t]}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="form-field">
-            <label htmlFor="reward-cost">עלות ({type === "family" ? "לבבות" : "כוכבים"})</label>
+            <label htmlFor="reward-cost">עלות (לבבות משפחתיים)</label>
             <input
               id="reward-cost"
               type="text"
@@ -136,19 +104,6 @@ export function RewardsSettings() {
               onChange={(e) => setCost(stripNonDigits(e.target.value))}
             />
           </div>
-          <label className="settings-form__row">
-            <input type="checkbox" checked={requiresApproval} onChange={(e) => setRequiresApproval(e.target.checked)} />
-            דורש אישור הורה
-          </label>
-
-          {type === "family" ? (
-            <p className="settings-form__hint">פרס משפחתי תמיד נרכש בלבבות — לא ניתן לסמן אותו כפרס זהב.</p>
-          ) : (
-            <label className="settings-form__row">
-              <input type="checkbox" checked={isGoldStar} onChange={(e) => setIsGoldStar(e.target.checked)} />
-              🌟 פרס זהב (ניתן למימוש רק בכוכבי זהב)
-            </label>
-          )}
         </Modal>
       )}
 

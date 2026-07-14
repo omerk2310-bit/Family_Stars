@@ -17,10 +17,12 @@ import { RedEventsScreen } from "./screens/RedEventsScreen";
 import { RewardsScreen } from "./screens/RewardsScreen";
 import { WeeklySummaryScreen } from "./screens/WeeklySummaryScreen";
 import { PendingApprovalsScreen } from "./screens/PendingApprovalsScreen";
+import { InstantRewardsGrantsScreen } from "./screens/InstantRewardsGrantsScreen";
 import { SettingsScreen } from "./screens/settings/SettingsScreen";
 import { AuthScreen } from "./screens/AuthScreen";
 import { RoleSelectorScreen } from "./screens/RoleSelectorScreen";
 import { RestrictedChildScreen } from "./screens/RestrictedChildScreen";
+import { InstantRewardsMigrationScreen } from "./screens/InstantRewardsMigrationScreen";
 import { AppShell } from "./components/layout/AppShell";
 
 function Router() {
@@ -47,13 +49,15 @@ function Router() {
       return <SettingsScreen initialTab={route.tab} navigate={setRoute} />;
     case "pendingApprovals":
       return <PendingApprovalsScreen navigate={setRoute} />;
+    case "instantRewardsGrants":
+      return <InstantRewardsGrantsScreen navigate={setRoute} />;
     default:
       return null;
   }
 }
 
 function DeviceRoleGate() {
-  const { children } = useAppData();
+  const { children, settings } = useAppData();
   const [role, setRole] = useState<DeviceRole>(() => {
     const deepLink = parseDeepLinkRole(window.location.search);
     if (deepLink) {
@@ -99,6 +103,9 @@ function DeviceRoleGate() {
           startInPinMode
         />
       );
+    }
+    if (!settings.economyMigrationShown) {
+      return <InstantRewardsMigrationScreen onDone={() => undefined} />;
     }
     return (
       <div className="device-role-gate__parent-wrapper">

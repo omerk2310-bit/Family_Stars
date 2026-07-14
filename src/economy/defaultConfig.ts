@@ -1,0 +1,53 @@
+import type { EconomyConfig } from "./types";
+
+export const DEFAULT_ECONOMY_CONFIG: EconomyConfig = {
+  tiers: [
+    {
+      id: "bronze",
+      label: "ארד",
+      icon: "🥉",
+      color: "#cd7f32",
+      source: { type: "behavior" },
+      window: "daily",
+      target: 10,
+      reward: "small",
+      consumesSource: false,
+      rolloverRemainder: false,
+      order: 0,
+      capped: true,
+    },
+    {
+      id: "silver",
+      label: "כסף",
+      icon: "🥈",
+      color: "#c0c0c0",
+      source: { type: "convert", from: "bronze", rate: 3 },
+      window: "weekly",
+      target: 15,
+      reward: "medium",
+      consumesSource: false,
+      rolloverRemainder: false,
+      order: 1,
+      capped: false,
+    },
+    {
+      id: "gold",
+      label: "זהב",
+      icon: "🥇",
+      color: "#ffd700",
+      source: { type: "convert", from: "silver", rate: 10 },
+      window: "monthly",
+      target: 6,
+      reward: "large",
+      consumesSource: false,
+      rolloverRemainder: false,
+      order: 2,
+      capped: false,
+    },
+  ],
+  resets: {
+    dailyAt: "00:00",
+    weekStartsOn: 0,
+    monthStartsOnDay: 1,
+  },
+};

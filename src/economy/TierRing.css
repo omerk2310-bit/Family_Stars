@@ -1,0 +1,55 @@
+.tier-ring {
+  position: relative;
+  display: inline-flex;
+}
+
+.tier-ring__track {
+  fill: none;
+  stroke: var(--color-border);
+  stroke-width: 6;
+}
+
+.tier-ring__progress {
+  fill: none;
+  stroke-width: 6;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.4s ease;
+}
+
+.tier-ring__center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.tier-ring__icon {
+  font-size: 1.4rem;
+}
+
+.tier-ring__value {
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.tier-progress-row {
+  display: flex;
+  gap: var(--space-4);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.tier-progress-row__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.tier-progress-row__label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  font-weight: 600;
+}

@@ -128,13 +128,57 @@ create table reward_redemptions (
   status text not null default 'pending' check (status in ('pending', 'approved', 'rejected'))
 );
 
--- 11. app_settings (singleton per user)
+-- 11. reward_claims — presence of a row = a parent marked an instant-rewards
+-- grant delivered. id is a deterministic composite key (childId:tierId:
+-- windowStartISO) matching the pure engine's RewardGrant.id — grants
+-- themselves are never persisted, only claims of them (see src/economy/).
+create table reward_claims (
+  id text primary key,
+  user_id uuid not null default auth.uid() references auth.users,
+  child_id text not null,
+  tier_id text not null,
+  window_start timestamptz not null,
+  claimed_at timestamptz not null default now()
+);
+
+-- 12. legacy_grants — one-time "closing gift" per child, created during the
+-- instant-rewards migration for a child with a meaningful balance under the
+-- old accumulation model. Unrelated to the tier engine.
+create table legacy_grants (
+  id text primary key, -- child_id (at most one per child)
+  user_id uuid not null default auth.uid() references auth.users,
+  child_id text not null,
+  size text not null,
+  source_note text not null,
+  granted_at timestamptz not null,
+  claimed_at timestamptz
+);
+
+-- 13. reward_definitions — the 3 fixed reward-size configs (small/medium/
+-- large), fully editable by parents. Not a catalog the child picks from.
+create table reward_definitions (
+  id text primary key, -- equals size
+  user_id uuid not null default auth.uid() references auth.users,
+  size text not null,
+  label text not null,
+  description text not null default '',
+  examples text[] not null default '{}'
+);
+
+-- 14. app_settings (singleton per user)
+-- Note: production databases created before economy_config/economy_starts_at/
+-- economy_migration_shown existed need the separate add-column migration
+-- instead of this fresh-install definition (see the retrofit pattern used
+-- for the GRANT statements above).
 create table app_settings (
   user_id uuid primary key default auth.uid() references auth.users,
   daily_star_cap int not null,
   daily_heart_cap int not null,
   family_heart_target int not null,
-  admin_pin text
+  admin_pin text,
+  economy_config jsonb not null default '{}'::jsonb,
+  economy_starts_at timestamptz not null default now(),
+  economy_migration_shown boolean not null default false
 );
 
 -- Row Level Security: every table is only readable/writable by its own user_id.
@@ -148,6 +192,9 @@ alter table red_event_types enable row level security;
 alter table red_events enable row level security;
 alter table rewards enable row level security;
 alter table reward_redemptions enable row level security;
+alter table reward_claims enable row level security;
+alter table legacy_grants enable row level security;
+alter table reward_definitions enable row level security;
 alter table app_settings enable row level security;
 
 do $$
@@ -157,7 +204,8 @@ begin
   foreach t in array array[
     'children', 'behaviors', 'star_events', 'star_adjustments',
     'heart_event_types', 'heart_events', 'red_event_types', 'red_events',
-    'rewards', 'reward_redemptions', 'app_settings'
+    'rewards', 'reward_redemptions', 'reward_claims', 'legacy_grants',
+    'reward_definitions', 'app_settings'
   ]
   loop
     execute format(
@@ -183,7 +231,7 @@ end $$;
 alter publication supabase_realtime add table
   children, behaviors, star_events, star_adjustments,
   heart_event_types, heart_events, red_event_types, red_events,
-  rewards, reward_redemptions;
+  rewards, reward_redemptions, reward_claims, legacy_grants, reward_definitions;
 
 -- Table-level grants: RLS policies alone are not enough — Postgres also
 -- requires the `authenticated` role to have basic table privileges, which
@@ -194,5 +242,6 @@ grant usage on schema public to authenticated;
 grant select, insert, update, delete on
   children, behaviors, star_events, star_adjustments,
   heart_event_types, heart_events, red_event_types, red_events,
-  rewards, reward_redemptions, app_settings
+  rewards, reward_redemptions, reward_claims, legacy_grants,
+  reward_definitions, app_settings
   to authenticated;

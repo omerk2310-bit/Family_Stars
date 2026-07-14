@@ -6,6 +6,7 @@ import type {
   RedEventType,
   Reward,
 } from "../types/entities";
+import { DEFAULT_ECONOMY_CONFIG } from "../economy/defaultConfig";
 
 const CHILD_BECHORA_ID = "seed-child-bechora";
 const CHILD_KTANA_ID = "seed-child-ktana";
@@ -296,4 +297,7 @@ export const seedSettings: AppSettings = {
   dailyStarCap: 15,
   dailyHeartCap: 2,
   familyHeartTarget: 10,
+  economyConfig: DEFAULT_ECONOMY_CONFIG,
+  economyStartsAt: new Date(0).toISOString(),
+  economyMigrationShown: false,
 };

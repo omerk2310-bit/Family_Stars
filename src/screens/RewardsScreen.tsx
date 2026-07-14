@@ -2,12 +2,7 @@ import { useState } from "react";
 import { useAppData } from "../state/AppDataContext";
 import type { Route } from "../types/routes";
 import type { Reward } from "../types/entities";
-import {
-  getActiveChildren,
-  getAvailableGoldStarsForChild,
-  getAvailableStarsForChild,
-  getFamilyHeartsCurrent,
-} from "../storage/selectors";
+import { getActiveChildren, getFamilyHeartsCurrent } from "../storage/selectors";
 import { generateId } from "../utils/id";
 import { AppShell } from "../components/layout/AppShell";
 import { EmptyState } from "../components/layout/EmptyState";
@@ -18,22 +13,16 @@ interface RewardsScreenProps {
   navigate: (route: Route) => void;
 }
 
-const GROUP_LABELS: Record<Reward["type"], string> = {
-  small: "פרסים קטנים",
-  medium: "פרסים בינוניים",
-  family: "פרסים משפחתיים",
-};
-
+// Personal (small/medium) reward redemption is retired in favor of the
+// instant bronze/silver/gold tier system — this screen now only serves
+// family-shared rewards, which remain a separate, untouched track.
 export function RewardsScreen({ navigate }: RewardsScreenProps) {
-  const { children, rewards, rewardRedemptions, starEvents, starAdjustments, heartEvents, settings, addRewardRedemption } =
-    useAppData();
+  const { children, rewards, rewardRedemptions, heartEvents, settings, addRewardRedemption } = useAppData();
   const [activeReward, setActiveReward] = useState<Reward | null>(null);
 
   const activeChildren = getActiveChildren(children);
-  const activeRewards = rewards.filter((r) => !r.archived).sort((a, b) => a.order - b.order);
+  const familyRewards = rewards.filter((r) => r.type === "family" && !r.archived).sort((a, b) => a.order - b.order);
   const familyHeartsCurrent = getFamilyHeartsCurrent(heartEvents, rewardRedemptions, rewards);
-
-  const groups: Reward["type"][] = ["small", "medium", "family"];
 
   function handleConfirm(childId?: string) {
     if (!activeReward) return;
@@ -48,12 +37,12 @@ export function RewardsScreen({ navigate }: RewardsScreenProps) {
   }
 
   return (
-    <AppShell title="מימוש פרסים" onBack={() => navigate({ screen: "home" })}>
+    <AppShell title="מימוש פרסים משפחתיים" onBack={() => navigate({ screen: "home" })}>
       <div className="rewards-screen">
-        {activeRewards.length === 0 ? (
+        {familyRewards.length === 0 ? (
           <EmptyState
             icon="🎁"
-            title="עדיין אין פרסים מוגדרים"
+            title="עדיין אין פרסים משפחתיים מוגדרים"
             message="אפשר להוסיף פרסים במסך ההגדרות."
             action={
               <button type="button" className="btn btn--primary" onClick={() => navigate({ screen: "settings", tab: "rewards" })}>
@@ -62,33 +51,22 @@ export function RewardsScreen({ navigate }: RewardsScreenProps) {
             }
           />
         ) : (
-          groups.map((group) => {
-            const items = activeRewards.filter((r) => r.type === group);
-            if (items.length === 0) return null;
-            return (
-              <section key={group}>
-                <h2 className="rewards-screen__section-title">{GROUP_LABELS[group]}</h2>
-                <div className="rewards-screen__list">
-                  {items.map((reward) => (
-                    <button
-                      key={reward.id}
-                      type="button"
-                      className="rewards-screen__item"
-                      onClick={() => setActiveReward(reward)}
-                    >
-                      <div>
-                        <p className="rewards-screen__item-title">{reward.title}</p>
-                        {reward.description && <p className="rewards-screen__item-desc">{reward.description}</p>}
-                      </div>
-                      <span className="rewards-screen__item-cost">
-                        {reward.cost} {group === "family" ? "💗" : reward.isGoldStar ? "🌟" : "⭐"}
-                      </span>
-                    </button>
-                  ))}
+          <div className="rewards-screen__list">
+            {familyRewards.map((reward) => (
+              <button
+                key={reward.id}
+                type="button"
+                className="rewards-screen__item"
+                onClick={() => setActiveReward(reward)}
+              >
+                <div>
+                  <p className="rewards-screen__item-title">{reward.title}</p>
+                  {reward.description && <p className="rewards-screen__item-desc">{reward.description}</p>}
                 </div>
-              </section>
-            );
-          })
+                <span className="rewards-screen__item-cost">{reward.cost} 💗</span>
+              </button>
+            ))}
+          </div>
         )}
       </div>
 
@@ -96,11 +74,7 @@ export function RewardsScreen({ navigate }: RewardsScreenProps) {
         <RedeemRewardModal
           reward={activeReward}
           children={activeChildren}
-          getAvailableStars={(childId) =>
-            activeReward.isGoldStar
-              ? getAvailableGoldStarsForChild(childId, starEvents, starAdjustments, rewardRedemptions, rewards)
-              : getAvailableStarsForChild(childId, starEvents, starAdjustments, rewardRedemptions, rewards)
-          }
+          getAvailableStars={() => 0}
           familyHeartsCurrent={familyHeartsCurrent}
           familyHeartTarget={settings.familyHeartTarget}
           onConfirm={handleConfirm}
