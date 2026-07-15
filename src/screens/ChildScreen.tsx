@@ -12,7 +12,7 @@ import { useEconomyForChild } from "../economy/useEconomyForChild";
 import { useNewGrantCelebration } from "../economy/useNewGrantCelebration";
 import { TierProgressRow } from "../economy/TierProgressRow";
 import { TierCelebration } from "../economy/TierCelebration";
-import { playStarTick, vibrateShort } from "../economy/audio";
+import { vibrateShort } from "../economy/audio";
 import "./ChildScreen.css";
 
 interface ChildScreenProps {
@@ -62,9 +62,6 @@ export function ChildScreen({ childId, navigate }: ChildScreenProps) {
       createdAt: new Date().toISOString(),
       isGoldStar: false,
     });
-    // Bronze earned-so-far-today (after this event) drives the pitch-ladder
-    // step — a bigger behavior naturally jumps further up the scale.
-    playStarTick(state.bronze.earned + awarded);
     vibrateShort();
   }
 

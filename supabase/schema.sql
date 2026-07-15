@@ -181,6 +181,23 @@ create table app_settings (
   economy_migration_shown boolean not null default false
 );
 
+-- 15. push_subscriptions — Web Push registrations, one row per device that
+-- opted in. device_role mirrors DeviceRole ("parent" has child_id null,
+-- "child" always has child_id set) — this is what the notify-* edge
+-- functions (supabase/functions/) query to know which devices to push to.
+-- Not added to the realtime publication below: no client ever reads this
+-- table live, it's written once at subscribe-time and only read server-side.
+create table push_subscriptions (
+  id text primary key,
+  user_id uuid not null default auth.uid() references auth.users,
+  device_role text not null check (device_role in ('parent', 'child')),
+  child_id text,
+  endpoint text not null unique,
+  p256dh text not null,
+  auth text not null,
+  created_at timestamptz not null default now()
+);
+
 -- Row Level Security: every table is only readable/writable by its own user_id.
 alter table children enable row level security;
 alter table behaviors enable row level security;
@@ -196,6 +213,7 @@ alter table reward_claims enable row level security;
 alter table legacy_grants enable row level security;
 alter table reward_definitions enable row level security;
 alter table app_settings enable row level security;
+alter table push_subscriptions enable row level security;
 
 do $$
 declare
@@ -205,7 +223,7 @@ begin
     'children', 'behaviors', 'star_events', 'star_adjustments',
     'heart_event_types', 'heart_events', 'red_event_types', 'red_events',
     'rewards', 'reward_redemptions', 'reward_claims', 'legacy_grants',
-    'reward_definitions', 'app_settings'
+    'reward_definitions', 'app_settings', 'push_subscriptions'
   ]
   loop
     execute format(
@@ -243,5 +261,5 @@ grant select, insert, update, delete on
   children, behaviors, star_events, star_adjustments,
   heart_event_types, heart_events, red_event_types, red_events,
   rewards, reward_redemptions, reward_claims, legacy_grants,
-  reward_definitions, app_settings
+  reward_definitions, app_settings, push_subscriptions
   to authenticated;

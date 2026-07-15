@@ -1,4 +1,5 @@
 const STORAGE_KEY = "hp.deviceRole";
+const PARENT_UNLOCKED_KEY = "hp.parentUnlocked";
 
 export type DeviceRole = { kind: "unset" } | { kind: "parent" } | { kind: "child"; childId: string };
 
@@ -20,6 +21,21 @@ export function setStoredDeviceRole(role: DeviceRole): void {
 
 export function clearStoredDeviceRole(): void {
   localStorage.removeItem(STORAGE_KEY);
+}
+
+// Persists across app reloads — once a device proves the parent PIN once, it
+// stays unlocked (Home + Settings) until an explicit "switch user" clears
+// this alongside the stored role.
+export function getParentUnlocked(): boolean {
+  return localStorage.getItem(PARENT_UNLOCKED_KEY) === "1";
+}
+
+export function setParentUnlocked(unlocked: boolean): void {
+  if (unlocked) {
+    localStorage.setItem(PARENT_UNLOCKED_KEY, "1");
+  } else {
+    localStorage.removeItem(PARENT_UNLOCKED_KEY);
+  }
 }
 
 export function parseDeepLinkRole(search: string): DeviceRole | null {
