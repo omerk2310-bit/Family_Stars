@@ -37,10 +37,15 @@ export async function requestAndSubscribe(role: PushRole, childId?: string): Pro
   const registration = await navigator.serviceWorker.ready;
   let subscription = await registration.pushManager.getSubscription();
   if (!subscription) {
-    subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as BufferSource,
-    });
+    try {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as BufferSource,
+      });
+    } catch (err) {
+      console.error("pushManager.subscribe failed:", err);
+      throw new Error(`subscribe-failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
 
   const json = subscription.toJSON();
@@ -55,5 +60,8 @@ export async function requestAndSubscribe(role: PushRole, childId?: string): Pro
     },
     { onConflict: "endpoint" }
   );
-  if (error) throw error;
+  if (error) {
+    console.error("push_subscriptions upsert failed:", error);
+    throw new Error(`supabase-upsert-failed: ${error.message}`);
+  }
 }

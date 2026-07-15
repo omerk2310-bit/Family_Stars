@@ -39,8 +39,18 @@ export function PushOptIn({ role, childId }: PushOptInProps) {
       await requestAndSubscribe(role, childId);
       setStatus("subscribed");
       setError(null);
-    } catch {
-      setError("לא הצלחנו להפעיל התראות. ודאו שאישרתם את הבקשה בדפדפן.");
+    } catch (err) {
+      console.error("push opt-in failed:", err);
+      const message = err instanceof Error ? err.message : String(err);
+      if (message === "permission-denied") {
+        setError("לא אישרתם את בקשת ההתראות בדפדפן. אפשר לנסות שוב.");
+      } else if (message.startsWith("subscribe-failed")) {
+        setError("הדפדפן סירב להירשם להתראות. ודאו שהאפליקציה מותקנת/פתוחה כראוי ונסו שוב.");
+      } else if (message.startsWith("supabase-upsert-failed")) {
+        setError("ההרשמה להתראות נכשלה בשמירה בשרת. נסו שוב בעוד רגע.");
+      } else {
+        setError("לא הצלחנו להפעיל התראות. ודאו שאישרתם את הבקשה בדפדפן.");
+      }
     }
   }
 

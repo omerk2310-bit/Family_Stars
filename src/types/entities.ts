@@ -9,6 +9,11 @@ export interface Child {
   order: number;
   createdAt: string;
   archived?: boolean;
+  // Set by the "reset stars" tool in Settings — a per-child cutover that
+  // hides StarEvent history before this point from the economy engine
+  // (src/economy/economySelectors.ts) without deleting any rows. Undefined
+  // means no reset has ever been applied for this child.
+  starsResetAt?: string;
 }
 
 export interface Behavior {

@@ -30,9 +30,15 @@ export function HomeScreen({ navigate }: HomeScreenProps) {
     activeChildren.reduce(
       (sum, child) =>
         sum +
-        getGrantsForChild(child.id, starEvents, settings.economyStartsAt, settings.economyConfig, rewardClaims, now).filter(
-          (g) => g.claimedAt === null
-        ).length,
+        getGrantsForChild(
+          child.id,
+          starEvents,
+          settings.economyStartsAt,
+          settings.economyConfig,
+          rewardClaims,
+          now,
+          child.starsResetAt
+        ).filter((g) => g.claimedAt === null).length,
       0
     ) + legacyGrants.filter((g) => !g.claimedAt).length;
 
@@ -114,7 +120,8 @@ export function HomeScreen({ navigate }: HomeScreenProps) {
                 starEvents,
                 settings.economyStartsAt,
                 settings.economyConfig,
-                now
+                now,
+                child.starsResetAt
               );
               return (
                 <ChildCard

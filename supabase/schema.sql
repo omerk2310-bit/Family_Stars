@@ -4,6 +4,9 @@
 -- all scoped to the signed-in user via Row Level Security.
 
 -- 1. children
+-- Note: production databases created before stars_reset_at existed need the
+-- separate add-column migration instead of this fresh-install definition
+-- (see the retrofit pattern used for the GRANT statements below).
 create table children (
   id text primary key,
   user_id uuid not null default auth.uid() references auth.users,
@@ -13,7 +16,8 @@ create table children (
   icon text not null,
   sort_order int not null,
   created_at timestamptz not null,
-  archived boolean not null default false
+  archived boolean not null default false,
+  stars_reset_at timestamptz
 );
 
 -- 2. behaviors

@@ -9,16 +9,25 @@ export interface EconomyForChild {
 }
 
 export function useEconomyForChild(childId: string): EconomyForChild {
-  const { starEvents, settings, rewardClaims } = useAppData();
+  const { children, starEvents, settings, rewardClaims } = useAppData();
   const now = new Date();
-  const state = getEconomyStateForChild(childId, starEvents, settings.economyStartsAt, settings.economyConfig, now);
+  const childStartsAt = children.find((c) => c.id === childId)?.starsResetAt;
+  const state = getEconomyStateForChild(
+    childId,
+    starEvents,
+    settings.economyStartsAt,
+    settings.economyConfig,
+    now,
+    childStartsAt
+  );
   const grants = getGrantsForChild(
     childId,
     starEvents,
     settings.economyStartsAt,
     settings.economyConfig,
     rewardClaims,
-    now
+    now,
+    childStartsAt
   );
   return { state, grants, config: settings.economyConfig };
 }
