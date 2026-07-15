@@ -35,6 +35,7 @@ const childConfig: TableConfig<Child> = {
     sort_order: c.order,
     created_at: c.createdAt,
     archived: c.archived ?? false,
+    stars_reset_at: c.starsResetAt ?? null,
   }),
   fromRow: (r) => ({
     id: r.id as string,
@@ -45,6 +46,7 @@ const childConfig: TableConfig<Child> = {
     order: r.sort_order as number,
     createdAt: r.created_at as string,
     archived: (r.archived as boolean) ?? undefined,
+    starsResetAt: (r.stars_reset_at as string | null) ?? undefined,
   }),
 };
 

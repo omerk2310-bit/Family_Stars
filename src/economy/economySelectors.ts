@@ -18,12 +18,18 @@ function toEngineEvent(e: AppStarEvent): EngineStarEvent {
 // The single place the economyStartsAt cutover is applied — every caller
 // filters through here so pre-pivot history never pollutes the new engine's
 // windows, without the engine itself needing to know about cutovers at all.
+// `childStartsAt` is an optional per-child reset point (Child.starsResetAt,
+// set by the "reset stars" tool in Settings) — when present and later than
+// the global cutover, it wins, so a reset child starts counting from 0
+// again without any old StarEvent rows being deleted.
 export function getEconomyEventsForChild(
   childId: string,
   starEvents: AppStarEvent[],
-  economyStartsAt: string
+  economyStartsAt: string,
+  childStartsAt?: string
 ): EngineStarEvent[] {
-  return starEvents.filter((e) => e.childId === childId && e.createdAt >= economyStartsAt).map(toEngineEvent);
+  const effectiveStartsAt = childStartsAt && childStartsAt > economyStartsAt ? childStartsAt : economyStartsAt;
+  return starEvents.filter((e) => e.childId === childId && e.createdAt >= effectiveStartsAt).map(toEngineEvent);
 }
 
 export function getEconomyStateForChild(
@@ -31,9 +37,10 @@ export function getEconomyStateForChild(
   starEvents: AppStarEvent[],
   economyStartsAt: string,
   config: EconomyConfig,
-  now: Date
+  now: Date,
+  childStartsAt?: string
 ): Record<TierId, TierState> {
-  const events = getEconomyEventsForChild(childId, starEvents, economyStartsAt);
+  const events = getEconomyEventsForChild(childId, starEvents, economyStartsAt, childStartsAt);
   return computeState(events, config, now);
 }
 
@@ -43,9 +50,10 @@ export function getGrantsForChild(
   economyStartsAt: string,
   config: EconomyConfig,
   rewardClaims: RewardClaim[],
-  now: Date
+  now: Date,
+  childStartsAt?: string
 ): RewardGrant[] {
-  const events = getEconomyEventsForChild(childId, starEvents, economyStartsAt);
+  const events = getEconomyEventsForChild(childId, starEvents, economyStartsAt, childStartsAt);
   const grants = computeGrants(events, config, now);
   return withClaims(grants, rewardClaims);
 }

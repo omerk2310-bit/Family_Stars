@@ -22,7 +22,15 @@ export function InstantRewardsGrantsScreen({ navigate }: InstantRewardsGrantsScr
   const now = new Date();
 
   const pendingByChild: { child: Child; grant: RewardGrant }[] = activeChildren.flatMap((child) =>
-    getGrantsForChild(child.id, starEvents, settings.economyStartsAt, settings.economyConfig, rewardClaims, now)
+    getGrantsForChild(
+      child.id,
+      starEvents,
+      settings.economyStartsAt,
+      settings.economyConfig,
+      rewardClaims,
+      now,
+      child.starsResetAt
+    )
       .filter((g) => g.claimedAt === null)
       .map((grant) => ({ child, grant }))
   );

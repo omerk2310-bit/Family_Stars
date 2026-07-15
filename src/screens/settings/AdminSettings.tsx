@@ -5,6 +5,7 @@ import { getActiveChildren, resolveChildName } from "../../storage/selectors";
 import { generateId } from "../../utils/id";
 import { formatHebrewDateTime } from "../../utils/format";
 import { stripNonDigits } from "../../utils/numericInput";
+import { ConfirmDialog } from "../../components/shared/ConfirmDialog";
 
 const PIN_LENGTH = 4;
 
@@ -19,7 +20,7 @@ function digitsOnly(value: string): string {
 const ADMIN_CORRECTION_BEHAVIOR_ID = "admin-correction";
 
 export function AdminSettings() {
-  const { children, starEvents, settings, updateSettings, addStarEvent } = useAppData();
+  const { children, starEvents, settings, updateSettings, addStarEvent, updateChild } = useAppData();
   const [changingPin, setChangingPin] = useState(false);
 
   const activeChildren = getActiveChildren(children);
@@ -79,12 +80,24 @@ export function AdminSettings() {
                     {formatHebrewDateTime(adjustment.createdAt)}
                   </p>
                 </div>
-                <span className="admin-settings__delta--positive">+{adjustment.pointsAwarded} ⭐</span>
+                <span
+                  className={
+                    adjustment.pointsAwarded < 0 ? "admin-settings__delta--negative" : "admin-settings__delta--positive"
+                  }
+                >
+                  {adjustment.pointsAwarded > 0 ? "+" : ""}
+                  {adjustment.pointsAwarded} ⭐
+                </span>
               </li>
             ))}
           </ul>
         </section>
       )}
+
+      <StarsResetTool
+        children={activeChildren}
+        onReset={(child) => updateChild({ ...child, starsResetAt: new Date().toISOString() })}
+      />
     </div>
   );
 }
@@ -253,6 +266,7 @@ interface AdjustmentToolProps {
 
 function AdjustmentTool({ children, onApply }: AdjustmentToolProps) {
   const [childId, setChildId] = useState(children.length === 1 ? children[0].id : "");
+  const [subtract, setSubtract] = useState(false);
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [saved, setSaved] = useState(false);
@@ -262,7 +276,7 @@ function AdjustmentTool({ children, onApply }: AdjustmentToolProps) {
 
   function handleApply() {
     if (!canApply) return;
-    onApply(childId, magnitude, note.trim() || undefined);
+    onApply(childId, subtract ? -magnitude : magnitude, note.trim() || undefined);
     setAmount("");
     setNote("");
     setSaved(true);
@@ -272,8 +286,7 @@ function AdjustmentTool({ children, onApply }: AdjustmentToolProps) {
   return (
     <div className="settings-form">
       <p className="settings-form__hint">
-        תיקון ידני בכוכבים של ילדה — נוסף מיידית כארד, לא כפוף ליעד היומי ואינו קשור להתנהגות מסוימת. תיקוני אדמין הם
-        תמיד תוספת חיובית, אף פעם לא הפחתה.
+        תיקון ידני בכוכבים של ילדה — נוסף מיידית כארד, לא כפוף ליעד היומי ואינו קשור להתנהגות מסוימת.
       </p>
       <div className="form-field">
         <label htmlFor="admin-adjust-child">עבור מי?</label>
@@ -287,6 +300,25 @@ function AdjustmentTool({ children, onApply }: AdjustmentToolProps) {
             </option>
           ))}
         </select>
+      </div>
+      <div className="form-field">
+        <label>כיוון</label>
+        <div className="btn-row">
+          <button
+            type="button"
+            className={`btn ${!subtract ? "btn--primary" : "btn--secondary"}`}
+            onClick={() => setSubtract(false)}
+          >
+            ➕ הוספה
+          </button>
+          <button
+            type="button"
+            className={`btn ${subtract ? "btn--primary" : "btn--secondary"}`}
+            onClick={() => setSubtract(true)}
+          >
+            ➖ הפחתה
+          </button>
+        </div>
       </div>
       <div className="form-field">
         <label htmlFor="admin-adjust-amount">כמות</label>
@@ -306,6 +338,64 @@ function AdjustmentTool({ children, onApply }: AdjustmentToolProps) {
       <button type="button" className="btn btn--primary" disabled={!canApply} onClick={handleApply}>
         {saved ? "בוצע ✓" : "החלה"}
       </button>
+    </div>
+  );
+}
+
+interface StarsResetToolProps {
+  children: Child[];
+  onReset: (child: Child) => void;
+}
+
+// Non-destructive: sets Child.starsResetAt, which the economy engine treats
+// as a per-child cutover (src/economy/economySelectors.ts) — old StarEvent
+// rows stay in Supabase untouched, they're just excluded from all 3 tiers'
+// windows going forward, so the rings drop to 0 live without deleting data.
+function StarsResetTool({ children, onReset }: StarsResetToolProps) {
+  const [childId, setChildId] = useState(children.length === 1 ? children[0].id : "");
+  const [confirming, setConfirming] = useState(false);
+
+  const selectedChild = children.find((c) => c.id === childId);
+
+  return (
+    <div className="settings-form">
+      <p className="settings-form__hint" style={{ fontWeight: 700, marginBottom: 8 }}>
+        איפוס כוכבים
+      </p>
+      <p className="settings-form__hint">
+        מתחיל למנות מחדש מ-0 בכל שלושת המסלולים (ארד/כסף/זהב) עבור ילדה נבחרת. ההיסטוריה הקודמת לא נמחקת, רק מפסיקה
+        להיספר קדימה.
+      </p>
+      <div className="form-field">
+        <label htmlFor="admin-reset-child">עבור מי?</label>
+        <select id="admin-reset-child" value={childId} onChange={(e) => setChildId(e.target.value)}>
+          <option value="" disabled>
+            בחרו ילדה
+          </option>
+          {children.map((child) => (
+            <option key={child.id} value={child.id}>
+              {child.displayName}
+            </option>
+          ))}
+        </select>
+      </div>
+      <button type="button" className="btn btn--danger" disabled={!selectedChild} onClick={() => setConfirming(true)}>
+        איפוס כוכבים
+      </button>
+
+      {confirming && selectedChild && (
+        <ConfirmDialog
+          title={`איפוס כוכבים ל${selectedChild.displayName}`}
+          message={`${selectedChild.displayName} תתחיל למנות מחדש מ-0 בארד, בכסף ובזהב. ההיסטוריה הקיימת נשמרת ולא נמחקת, אבל מתנות שממתינות מהתקופה הקודמת ולא נמסרו יפסיקו להופיע. לא ניתן לבטל פעולה זו.`}
+          confirmLabel="איפוס"
+          danger
+          onCancel={() => setConfirming(false)}
+          onConfirm={() => {
+            onReset(selectedChild);
+            setConfirming(false);
+          }}
+        />
+      )}
     </div>
   );
 }

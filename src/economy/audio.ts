@@ -4,6 +4,7 @@ import type { TierId } from "./types";
 // No audio files — everything here is synthesized with the Web Audio API so
 // the app stays self-contained (no assets, no network dependency).
 let audioCtx: AudioContext | null = null;
+let masterCompressor: DynamicsCompressorNode | null = null;
 
 // The AudioContext can only be created/resumed after a user gesture (browser
 // autoplay policy) — every call site here is already reached from a click,
@@ -15,6 +16,23 @@ function getAudioContext(): AudioContext | null {
   if (!audioCtx) audioCtx = new Ctor();
   if (audioCtx.state === "suspended") audioCtx.resume().catch(() => undefined);
   return audioCtx;
+}
+
+// Every tone routes through this single shared limiter instead of straight
+// to the destination — lets individual gainPeak values be pushed louder
+// without the multi-note chords in playTierAchievement summing into
+// clipping/distortion.
+function getMasterCompressor(ctx: AudioContext): DynamicsCompressorNode {
+  if (!masterCompressor) {
+    masterCompressor = ctx.createDynamicsCompressor();
+    masterCompressor.threshold.value = -12;
+    masterCompressor.knee.value = 12;
+    masterCompressor.ratio.value = 8;
+    masterCompressor.attack.value = 0.003;
+    masterCompressor.release.value = 0.15;
+    masterCompressor.connect(ctx.destination);
+  }
+  return masterCompressor;
 }
 
 // Major pentatonic scale, extended across octaves by adding 12 semitones per
@@ -29,7 +47,7 @@ function pitchForStep(step: number): number {
   return ROOT_FREQ * Math.pow(2, semitone / 12);
 }
 
-function playTone(ctx: AudioContext, freq: number, startOffset: number, duration: number, gainPeak = 0.2): void {
+function playTone(ctx: AudioContext, freq: number, startOffset: number, duration: number, gainPeak = 0.4): void {
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.type = "sine";
@@ -39,7 +57,7 @@ function playTone(ctx: AudioContext, freq: number, startOffset: number, duration
   gain.gain.linearRampToValueAtTime(gainPeak, start + 0.01);
   gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
   osc.connect(gain);
-  gain.connect(ctx.destination);
+  gain.connect(getMasterCompressor(ctx));
   osc.start(start);
   osc.stop(start + duration + 0.02);
 }
@@ -55,7 +73,7 @@ export function playStarTick(stepInWindow: number, target: number): void {
   const ctx = getAudioContext();
   if (!ctx) return;
   const proximity = target > 0 ? Math.min(1, stepInWindow / target) : 0;
-  const gainPeak = 0.16 + proximity * 0.24;
+  const gainPeak = 0.32 + proximity * 0.4;
   playTone(ctx, pitchForStep(stepInWindow), 0, 0.15, gainPeak);
 }
 
@@ -70,17 +88,17 @@ export function playTierAchievement(tierId: TierId): void {
   const C2 = 1046.5;
 
   if (tierId === "bronze") {
-    [C, E, G].forEach((freq, i) => playTone(ctx, freq, i * 0.08, 0.35, 0.22));
+    [C, E, G].forEach((freq, i) => playTone(ctx, freq, i * 0.08, 0.35, 0.45));
     return;
   }
   if (tierId === "silver") {
-    [C, E, G].forEach((freq, i) => playTone(ctx, freq, i * 0.06, 0.3, 0.2));
-    [C, E, G, C2].forEach((freq) => playTone(ctx, freq, 0.3, 0.6, 0.18));
+    [C, E, G].forEach((freq, i) => playTone(ctx, freq, i * 0.06, 0.3, 0.42));
+    [C, E, G, C2].forEach((freq) => playTone(ctx, freq, 0.3, 0.6, 0.38));
     return;
   }
   // gold — the biggest one: a short rising run into a full sustained chord
-  [C, E, G, C2].forEach((freq, i) => playTone(ctx, freq, i * 0.1, 0.2, 0.22));
-  [C, E, G, C2].forEach((freq) => playTone(ctx, freq, 0.5, 1.1, 0.2));
+  [C, E, G, C2].forEach((freq, i) => playTone(ctx, freq, i * 0.1, 0.2, 0.45));
+  [C, E, G, C2].forEach((freq) => playTone(ctx, freq, 0.5, 1.1, 0.4));
 }
 
 export function vibrateShort(): void {
