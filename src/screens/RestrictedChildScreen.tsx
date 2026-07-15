@@ -9,8 +9,10 @@ import { EmptyState } from "../components/layout/EmptyState";
 import { HeartBadge } from "../components/shared/HeartBadge";
 import { RequestRewardModal } from "../components/modals/RequestRewardModal";
 import { UnlockForm } from "./settings/AdminSettings";
+import { PushOptIn } from "../notifications/PushOptIn";
 import { useEconomyForChild } from "../economy/useEconomyForChild";
 import { useNewGrantCelebration } from "../economy/useNewGrantCelebration";
+import { useStarTickSound } from "../economy/useStarTickSound";
 import { TierProgressRow } from "../economy/TierProgressRow";
 import { TierCelebration } from "../economy/TierCelebration";
 import "./RestrictedChildScreen.css";
@@ -33,6 +35,10 @@ export function RestrictedChildScreen({ childId, onResetDevice }: RestrictedChil
   const { state, grants, config } = useEconomyForChild(childId);
   const { celebrating, dismiss } = useNewGrantCelebration(grants);
   const celebratingTier = celebrating ? config.tiers.find((t) => t.id === celebrating) : null;
+
+  const cappedTier = config.tiers.find((t) => t.source.type === "behavior" && t.capped);
+  const cappedState = cappedTier ? state[cappedTier.id] : null;
+  useStarTickSound(cappedState?.earned ?? 0, cappedState?.target ?? 0);
 
   if (!child) {
     return (
@@ -66,6 +72,8 @@ export function RestrictedChildScreen({ childId, onResetDevice }: RestrictedChil
         <TierProgressRow config={config} state={state} />
 
         <HeartBadge value={familyHeartsCurrent} label="לבבות משפחתיים" />
+
+        <PushOptIn role="child" childId={childId} />
 
         {requestedMessage && <div className="restricted-child-screen__toast">הבקשה נשלחה להורים לאישור ✓</div>}
 

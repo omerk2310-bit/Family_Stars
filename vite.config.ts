@@ -9,8 +9,15 @@ export default defineConfig({
       registerType: "autoUpdate",
       manifest: false,
       includeAssets: ["icons/*.svg", "icons/*.png"],
-      workbox: {
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
+      injectManifest: {
         globPatterns: ["**/*.{js,css,html,svg,png,ico}"],
+      },
+      devOptions: {
+        enabled: true,
+        type: "module",
       },
     }),
   ],

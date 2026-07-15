@@ -16,13 +16,9 @@ function digitsOnly(value: string): string {
   return value.replace(/\D/g, "").slice(0, PIN_LENGTH);
 }
 
-interface AdminSettingsProps {
-  onLock: () => void;
-}
-
 const ADMIN_CORRECTION_BEHAVIOR_ID = "admin-correction";
 
-export function AdminSettings({ onLock }: AdminSettingsProps) {
+export function AdminSettings() {
   const { children, starEvents, settings, updateSettings, addStarEvent } = useAppData();
   const [changingPin, setChangingPin] = useState(false);
 
@@ -34,19 +30,14 @@ export function AdminSettings({ onLock }: AdminSettingsProps) {
 
   return (
     <div className="settings-form">
-      <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-2)" }}>
-        <button
-          type="button"
-          className="btn btn--secondary"
-          style={{ width: "auto" }}
-          onClick={() => setChangingPin((v) => !v)}
-        >
-          {changingPin ? "ביטול" : "שינוי קוד"}
-        </button>
-        <button type="button" className="btn btn--secondary" style={{ width: "auto" }} onClick={onLock}>
-          🔒 נעילת ההגדרות
-        </button>
-      </div>
+      <button
+        type="button"
+        className="btn btn--secondary"
+        style={{ width: "auto" }}
+        onClick={() => setChangingPin((v) => !v)}
+      >
+        {changingPin ? "ביטול" : "שינוי קוד"}
+      </button>
 
       {changingPin && (
         <ChangePinForm

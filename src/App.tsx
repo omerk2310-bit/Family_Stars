@@ -5,8 +5,10 @@ import type { Route } from "./types/routes";
 import { getActiveChildren } from "./storage/selectors";
 import {
   clearStoredDeviceRole,
+  getParentUnlocked,
   getStoredDeviceRole,
   parseDeepLinkRole,
+  setParentUnlocked,
   setStoredDeviceRole,
   type DeviceRole,
 } from "./state/deviceRole";
@@ -66,7 +68,7 @@ function DeviceRoleGate() {
     }
     return getStoredDeviceRole();
   });
-  const [parentUnlocked, setParentUnlocked] = useState(false);
+  const [parentUnlocked, setParentUnlockedState] = useState(getParentUnlocked);
 
   function selectChild(childId: string) {
     const next: DeviceRole = { kind: "child", childId };
@@ -78,11 +80,13 @@ function DeviceRoleGate() {
     setStoredDeviceRole({ kind: "parent" });
     setRole({ kind: "parent" });
     setParentUnlocked(true);
+    setParentUnlockedState(true);
   }
 
   function resetDevice() {
     clearStoredDeviceRole();
     setParentUnlocked(false);
+    setParentUnlockedState(false);
     setRole({ kind: "unset" });
   }
 

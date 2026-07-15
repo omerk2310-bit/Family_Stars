@@ -47,12 +47,16 @@ function playTone(ctx: AudioContext, freq: number, startOffset: number, duration
 // The pitch-ladder: call with how many bronze stars the child has earned
 // today so far (0-indexed) — every consecutive star that day sounds higher
 // than the last. Resets naturally once the daily window rolls over, since
-// the caller derives `stepInWindow` from today's tier state.
-export function playStarTick(stepInWindow: number): void {
+// the caller derives `stepInWindow` from today's tier state. `target` (the
+// tier's cap) scales the tick's volume up as the child gets closer to it, so
+// the feedback genuinely intensifies, not just rises in pitch.
+export function playStarTick(stepInWindow: number, target: number): void {
   if (isSoundMuted()) return;
   const ctx = getAudioContext();
   if (!ctx) return;
-  playTone(ctx, pitchForStep(stepInWindow), 0, 0.15);
+  const proximity = target > 0 ? Math.min(1, stepInWindow / target) : 0;
+  const gainPeak = 0.16 + proximity * 0.24;
+  playTone(ctx, pitchForStep(stepInWindow), 0, 0.15, gainPeak);
 }
 
 // Three escalating celebrations for reaching a tier's target.
