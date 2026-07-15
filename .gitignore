@@ -2,6 +2,7 @@ node_modules
 dist
 dist-ssr
 dev-dist
+supabase/.temp
 *.local
 .DS_Store
 *.tsbuildinfo
