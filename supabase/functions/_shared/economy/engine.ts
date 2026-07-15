@@ -1,6 +1,6 @@
 // Mirror of src/economy/engine.ts — see types.ts in this folder for why.
-import type { EconomyConfig, EngineStarEvent, RewardGrant, TierConfig, TierId, TierState } from "./types";
-import { getTierWindow, type Window } from "./windows";
+import type { EconomyConfig, EngineStarEvent, RewardGrant, TierConfig, TierId, TierState } from "./types.ts";
+import { getTierWindow, type Window } from "./windows.ts";
 
 // The single recursive rule that makes the engine work for any tier-chain
 // length with zero code changes: a convert-tier's "earned in window" is the

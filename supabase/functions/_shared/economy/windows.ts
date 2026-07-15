@@ -1,5 +1,5 @@
 // Mirror of src/economy/windows.ts — see types.ts in this folder for why.
-import type { EconomyResets, TierConfig } from "./types";
+import type { EconomyResets, TierConfig } from "./types.ts";
 
 export interface Window {
   start: Date;
