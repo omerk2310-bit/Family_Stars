@@ -11,7 +11,6 @@ export type SettingsTab =
 
 export type Route =
   | { screen: "home" }
-  | { screen: "child"; childId: string }
   | { screen: "familyHearts" }
   | { screen: "redEvents" }
   | { screen: "rewards" }

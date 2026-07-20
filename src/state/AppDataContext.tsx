@@ -167,6 +167,7 @@ interface AppDataContextValue {
   reorderBehaviors: (orderedIds: string[]) => void;
 
   addStarEvent: (event: StarEvent) => void;
+  updateStarEventStatus: (id: string, status: StarEvent["status"], pointsAwarded?: number) => void;
   addStarAdjustment: (adjustment: StarAdjustment) => void;
 
   addHeartEventType: (type: HeartEventType) => void;
@@ -303,6 +304,18 @@ export function AppDataProvider({ children: reactChildren }: { children: ReactNo
     [rewardRedemptionsState]
   );
 
+  // A parent can edit the requested point amount while approving a child's
+  // star request — pointsAwarded is optional so rejecting doesn't need to
+  // pass one.
+  const updateStarEventStatus = useCallback(
+    (id: string, status: StarEvent["status"], pointsAwarded?: number) => {
+      const event = starEventsState.items.find((e) => e.id === id);
+      if (!event) return;
+      starEventsState.update({ ...event, status, ...(pointsAwarded !== undefined ? { pointsAwarded } : {}) });
+    },
+    [starEventsState]
+  );
+
   // computeGrants() (src/economy/engine.ts) always returns claimedAt: null —
   // it's pure and derived purely from StarEvent history. Marking a grant
   // delivered just writes one row into reward_claims, keyed by the grant's
@@ -402,6 +415,7 @@ export function AppDataProvider({ children: reactChildren }: { children: ReactNo
       reorderBehaviors,
 
       addStarEvent: starEventsState.add,
+      updateStarEventStatus,
       addStarAdjustment: starAdjustmentsState.add,
 
       addHeartEventType: heartEventTypesState.add,
@@ -456,6 +470,7 @@ export function AppDataProvider({ children: reactChildren }: { children: ReactNo
       reorderBehaviors,
       linkRepairToRedEvent,
       updateRewardRedemptionStatus,
+      updateStarEventStatus,
       claimRewardGrant,
       claimLegacyGrant,
       updateSettings,

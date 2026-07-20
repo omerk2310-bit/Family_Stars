@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { useAppData } from "../state/AppDataContext";
-import type { Reward } from "../types/entities";
-import { getFamilyHeartsCurrent } from "../storage/selectors";
+import type { Behavior, Reward } from "../types/entities";
+import { getActiveBehaviorsForChild, getFamilyHeartsCurrent } from "../storage/selectors";
 import { generateId } from "../utils/id";
 import { formatHebrewDateTime } from "../utils/format";
 import { AppShell } from "../components/layout/AppShell";
 import { EmptyState } from "../components/layout/EmptyState";
 import { HeartBadge } from "../components/shared/HeartBadge";
+import { BehaviorButton } from "../components/shared/BehaviorButton";
+import { LogStarEventModal } from "../components/modals/LogStarEventModal";
 import { RequestRewardModal } from "../components/modals/RequestRewardModal";
 import { UnlockForm } from "./settings/AdminSettings";
 import { PushOptIn } from "../notifications/PushOptIn";
@@ -25,10 +27,21 @@ interface RestrictedChildScreenProps {
 }
 
 export function RestrictedChildScreen({ childId, onResetDevice }: RestrictedChildScreenProps) {
-  const { children, rewards, rewardRedemptions, heartEvents, legacyGrants, rewardDefinitions, settings, addRewardRedemption } =
-    useAppData();
+  const {
+    children,
+    behaviors,
+    rewards,
+    rewardRedemptions,
+    heartEvents,
+    legacyGrants,
+    rewardDefinitions,
+    settings,
+    addRewardRedemption,
+    addStarEvent,
+  } = useAppData();
   const [activeReward, setActiveReward] = useState<Reward | null>(null);
-  const [requestedMessage, setRequestedMessage] = useState(false);
+  const [activeBehavior, setActiveBehavior] = useState<Behavior | null>(null);
+  const [requestedMessage, setRequestedMessage] = useState<string | null>(null);
   const [resettingDevice, setResettingDevice] = useState(false);
 
   const child = children.find((c) => c.id === childId);
@@ -48,6 +61,15 @@ export function RestrictedChildScreen({ childId, onResetDevice }: RestrictedChil
     );
   }
 
+  const activeBehaviors = getActiveBehaviorsForChild(child.id, behaviors);
+  // Same cap-clamping rule the parent's logging tool used to enforce (target
+  // also acts as a hard ceiling for capped tiers) — moved here since the
+  // child now initiates the request. `remaining` only reflects already-
+  // approved progress, so a child can still queue requests that together
+  // exceed the cap; the parent reviewing each one is the real backstop now.
+  const remaining = cappedState ? Math.max(0, cappedState.target - cappedState.earned) : Infinity;
+  const atCap = remaining <= 0;
+
   const familyHeartsCurrent = getFamilyHeartsCurrent(heartEvents, rewardRedemptions, rewards);
   const familyRewards = rewards.filter((r) => r.type === "family" && !r.archived).sort((a, b) => a.order - b.order);
   const myLegacyGrant = legacyGrants.find((g) => g.childId === childId);
@@ -62,8 +84,27 @@ export function RestrictedChildScreen({ childId, onResetDevice }: RestrictedChil
       status: "pending",
     });
     setActiveReward(null);
-    setRequestedMessage(true);
-    setTimeout(() => setRequestedMessage(false), 3000);
+    setRequestedMessage("הבקשה נשלחה להורים לאישור ✓");
+    setTimeout(() => setRequestedMessage(null), 3000);
+  }
+
+  function handleConfirmBehavior(points: number, note?: string) {
+    if (!activeBehavior) return;
+    setActiveBehavior(null);
+    const requested = Math.min(points, remaining);
+    if (requested <= 0) return;
+    addStarEvent({
+      id: generateId(),
+      childId: child!.id,
+      behaviorId: activeBehavior.id,
+      pointsAwarded: requested,
+      note,
+      createdAt: new Date().toISOString(),
+      isGoldStar: false,
+      status: "pending",
+    });
+    setRequestedMessage("הבקשה נשלחה להורים לאישור ✓");
+    setTimeout(() => setRequestedMessage(null), 3000);
   }
 
   return (
@@ -71,11 +112,31 @@ export function RestrictedChildScreen({ childId, onResetDevice }: RestrictedChil
       <div className="restricted-child-screen">
         <TierProgressRow config={config} state={state} />
 
+        {requestedMessage && <div className="restricted-child-screen__toast">{requestedMessage}</div>}
+
+        {atCap && <div className="restricted-child-screen__cap-message">הגעת ליעד היומי. איזה יום חזק! 🌟</div>}
+
+        <section>
+          <h2 className="restricted-child-screen__section-title">מה עשיתי היום?</h2>
+          {activeBehaviors.length === 0 ? (
+            <EmptyState icon="🌱" title="עוד אין התנהגויות מוגדרות" message="יש לבקש מהורה להוסיף התנהגויות במסך ההגדרות." />
+          ) : (
+            <div className="restricted-child-screen__behaviors">
+              {activeBehaviors.map((behavior) => (
+                <BehaviorButton
+                  key={behavior.id}
+                  behavior={behavior}
+                  disabled={atCap}
+                  onClick={() => setActiveBehavior(behavior)}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
         <HeartBadge value={familyHeartsCurrent} label="לבבות משפחתיים" />
 
         <PushOptIn role="child" childId={childId} />
-
-        {requestedMessage && <div className="restricted-child-screen__toast">הבקשה נשלחה להורים לאישור ✓</div>}
 
         <section>
           <h2 className="restricted-child-screen__section-title">המתנות שלי</h2>
@@ -154,6 +215,10 @@ export function RestrictedChildScreen({ childId, onResetDevice }: RestrictedChil
           onConfirm={handleConfirmRequest}
           onClose={() => setActiveReward(null)}
         />
+      )}
+
+      {activeBehavior && (
+        <LogStarEventModal behavior={activeBehavior} onConfirm={handleConfirmBehavior} onClose={() => setActiveBehavior(null)} />
       )}
 
       {celebratingTier && (

@@ -42,6 +42,9 @@ create table behaviors (
 );
 
 -- 3. star_events
+-- Note: production databases created before status existed need the
+-- separate add-column/backfill migration instead of this fresh-install
+-- definition (see the retrofit pattern used for the GRANT statements below).
 create table star_events (
   id text primary key,
   user_id uuid not null default auth.uid() references auth.users,
@@ -50,7 +53,8 @@ create table star_events (
   points_awarded int not null,
   note text,
   created_at timestamptz not null,
-  is_gold_star boolean not null default false
+  is_gold_star boolean not null default false,
+  status text not null default 'approved' check (status in ('pending', 'approved', 'rejected'))
 );
 
 -- 4. star_adjustments

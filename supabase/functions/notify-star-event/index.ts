@@ -10,18 +10,30 @@ interface StarEventRow {
   behavior_id: string;
   points_awarded: number;
   created_at: string;
+  status: "pending" | "approved" | "rejected";
 }
 
 interface WebhookPayload {
-  type: "INSERT";
+  type: "INSERT" | "UPDATE";
   table: "star_events";
   record: StarEventRow;
+  old_record?: StarEventRow;
 }
 
 const WINDOW_LABELS: Record<string, string> = { daily: "היומי", weekly: "השבועי", monthly: "החודשי" };
 
 Deno.serve(async (req) => {
-  const { record } = (await req.json()) as WebhookPayload;
+  const { record, old_record } = (await req.json()) as WebhookPayload;
+
+  // Children now submit stars as pending requests (INSERT with
+  // status:"pending"); only an approval (status becomes "approved", whether
+  // via INSERT — admin corrections / red-event repairs, which are inserted
+  // pre-approved — or via UPDATE when a parent approves a request) should
+  // notify. Skip everything else, including re-fires on an already-approved
+  // row being touched again for an unrelated reason.
+  if (record.status !== "approved" || old_record?.status === "approved") {
+    return new Response("not a new approval, skipped", { status: 200 });
+  }
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -65,8 +77,9 @@ Deno.serve(async (req) => {
 
     const { data: recentEvents } = await supabase
       .from("star_events")
-      .select("id, child_id, behavior_id, points_awarded, created_at")
+      .select("id, child_id, behavior_id, points_awarded, created_at, status")
       .eq("child_id", record.child_id)
+      .eq("status", "approved")
       .gte("created_at", economyStartsAt)
       .returns<StarEventRow[]>();
 

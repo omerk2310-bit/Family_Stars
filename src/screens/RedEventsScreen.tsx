@@ -44,6 +44,7 @@ export function RedEventsScreen({ navigate }: RedEventsScreenProps) {
         note: "תיקון לאחר אירוע אדום",
         createdAt: new Date().toISOString(),
         isGoldStar: repairBehavior?.isGoldStar ?? false,
+        status: "approved",
       });
       linkRepairToRedEvent(redEventId, starEventId);
     }

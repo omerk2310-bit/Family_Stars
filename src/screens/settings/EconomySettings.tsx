@@ -18,6 +18,11 @@ export function EconomySettings() {
   const [rates, setRates] = useState(() =>
     Object.fromEntries(sortedTiers.map((t) => [t.id, t.source.type === "convert" ? String(t.source.rate) : ""]))
   );
+  const [units, setUnits] = useState(() =>
+    Object.fromEntries(
+      sortedTiers.map((t) => [t.id, t.source.type === "convert" ? t.source.unit ?? "stars" : "stars"])
+    )
+  );
   const [windows, setWindows] = useState(() => Object.fromEntries(sortedTiers.map((t) => [t.id, t.window])));
   const [capped, setCapped] = useState(() => Object.fromEntries(sortedTiers.map((t) => [t.id, t.capped])));
   const [dailyAt, setDailyAt] = useState(economyConfig.resets.dailyAt);
@@ -34,7 +39,11 @@ export function EconomySettings() {
       capped: capped[tier.id] ?? tier.capped,
       source:
         tier.source.type === "convert"
-          ? { ...tier.source, rate: Math.max(1, parseIntOrFallback(rates[tier.id], tier.source.rate)) }
+          ? {
+              ...tier.source,
+              rate: Math.max(1, parseIntOrFallback(rates[tier.id], tier.source.rate)),
+              unit: (units[tier.id] as "stars" | "medals") ?? "stars",
+            }
           : tier.source,
     }));
     const clampedMonthDay = Math.min(31, Math.max(1, parseIntOrFallback(monthStartsOnDay, economyConfig.resets.monthStartsOnDay)));
@@ -105,18 +114,41 @@ export function EconomySettings() {
             </label>
           )}
           {tier.source.type === "convert" && (
-            <div className="form-field">
-              <label htmlFor={`economy-rate-${tier.id}`}>
-                יחס המרה (כמה {tier.source.from === "bronze" ? "ארד" : "כסף"} לכל יחידה)
-              </label>
-              <input
-                id={`economy-rate-${tier.id}`}
-                type="text"
-                inputMode="numeric"
-                value={rates[tier.id] ?? ""}
-                onChange={(e) => setRates((prev) => ({ ...prev, [tier.id]: stripNonDigits(e.target.value) }))}
-              />
-            </div>
+            <>
+              <div className="form-field">
+                <label>סוג המרה</label>
+                <div className="btn-row">
+                  <button
+                    type="button"
+                    className={`btn ${units[tier.id] !== "medals" ? "btn--primary" : "btn--secondary"}`}
+                    onClick={() => setUnits((prev) => ({ ...prev, [tier.id]: "stars" }))}
+                  >
+                    מבוסס כוכבים
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn ${units[tier.id] === "medals" ? "btn--primary" : "btn--secondary"}`}
+                    onClick={() => setUnits((prev) => ({ ...prev, [tier.id]: "medals" }))}
+                  >
+                    מבוסס מדליות
+                  </button>
+                </div>
+              </div>
+              <div className="form-field">
+                <label htmlFor={`economy-rate-${tier.id}`}>
+                  {units[tier.id] === "medals"
+                    ? `יחס המרה (כמה מדליות ${tier.source.from === "bronze" ? "ארד" : "כסף"} לכל יחידה)`
+                    : `יחס המרה (כמה ${tier.source.from === "bronze" ? "ארד" : "כסף"} לכל יחידה)`}
+                </label>
+                <input
+                  id={`economy-rate-${tier.id}`}
+                  type="text"
+                  inputMode="numeric"
+                  value={rates[tier.id] ?? ""}
+                  onChange={(e) => setRates((prev) => ({ ...prev, [tier.id]: stripNonDigits(e.target.value) }))}
+                />
+              </div>
+            </>
           )}
         </section>
       ))}

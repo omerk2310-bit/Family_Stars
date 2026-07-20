@@ -1,15 +1,13 @@
-import { useState } from "react";
+import { ClipboardList, Gift, Heart, Shield } from "lucide-react";
 import { useAppData } from "../state/AppDataContext";
 import { useToday } from "../hooks/useToday";
 import type { Route } from "../types/routes";
-import { getActiveChildren, getFamilyHeartsCurrent, getPendingRewardRedemptions } from "../storage/selectors";
+import { getActiveChildren, getFamilyHeartsCurrent, getPendingRewardRedemptions, getPendingStarEvents } from "../storage/selectors";
 import { getEconomyStateForChild, getGrantsForChild } from "../economy/economySelectors";
 import { formatHebrewDate } from "../utils/format";
 import { ChildCard } from "../components/shared/ChildCard";
 import { HeartBadge } from "../components/shared/HeartBadge";
 import { EmptyState } from "../components/layout/EmptyState";
-import { Modal } from "../components/shared/Modal";
-import { ChildAvatar } from "../components/shared/ChildAvatar";
 import "./HomeScreen.css";
 
 interface HomeScreenProps {
@@ -19,11 +17,10 @@ interface HomeScreenProps {
 export function HomeScreen({ navigate }: HomeScreenProps) {
   const { children, starEvents, heartEvents, rewardRedemptions, rewards, rewardClaims, legacyGrants, settings } = useAppData();
   const today = useToday();
-  const [pickingChildFor, setPickingChildFor] = useState<"stars" | null>(null);
 
   const activeChildren = getActiveChildren(children);
   const familyHeartsCurrent = getFamilyHeartsCurrent(heartEvents, rewardRedemptions, rewards);
-  const pendingCount = getPendingRewardRedemptions(rewardRedemptions).length;
+  const pendingCount = getPendingRewardRedemptions(rewardRedemptions).length + getPendingStarEvents(starEvents).length;
 
   const now = new Date();
   const pendingGrantsCount =
@@ -41,15 +38,6 @@ export function HomeScreen({ navigate }: HomeScreenProps) {
         ).filter((g) => g.claimedAt === null).length,
       0
     ) + legacyGrants.filter((g) => !g.claimedAt).length;
-
-  function handleAddStarsClick() {
-    if (activeChildren.length === 0) return;
-    if (activeChildren.length === 1) {
-      navigate({ screen: "child", childId: activeChildren[0].id });
-      return;
-    }
-    setPickingChildFor("stars");
-  }
 
   return (
     <div className="home-screen">
@@ -70,7 +58,7 @@ export function HomeScreen({ navigate }: HomeScreenProps) {
         className={`btn ${pendingCount > 0 ? "btn--amber" : "btn--secondary"} home-screen__approvals-btn`}
         onClick={() => navigate({ screen: "pendingApprovals" })}
       >
-        📋 בקשות ממתינות{pendingCount > 0 ? ` (${pendingCount})` : ""}
+        <ClipboardList size={18} /> בקשות ממתינות{pendingCount > 0 ? ` (${pendingCount})` : ""}
       </button>
 
       <button
@@ -78,24 +66,15 @@ export function HomeScreen({ navigate }: HomeScreenProps) {
         className={`btn ${pendingGrantsCount > 0 ? "btn--amber" : "btn--secondary"} home-screen__approvals-btn`}
         onClick={() => navigate({ screen: "instantRewardsGrants" })}
       >
-        🎁 מתנות לחלוקה{pendingGrantsCount > 0 ? ` (${pendingGrantsCount})` : ""}
+        <Gift size={18} /> מתנות לחלוקה{pendingGrantsCount > 0 ? ` (${pendingGrantsCount})` : ""}
       </button>
 
       <section className="home-screen__actions">
-        <button type="button" className="btn btn--primary" onClick={handleAddStarsClick} disabled={activeChildren.length === 0}>
-          ⭐ הוספת כוכבים
-        </button>
         <button type="button" className="btn btn--secondary" onClick={() => navigate({ screen: "familyHearts" })}>
-          💗 הוספת לב משפחתי
+          <Heart size={18} /> הוספת לב משפחתי
         </button>
         <button type="button" className="btn btn--amber" onClick={() => navigate({ screen: "redEvents" })}>
-          🛡️ רישום אירוע אדום
-        </button>
-        <button type="button" className="btn btn--secondary" onClick={() => navigate({ screen: "rewards" })}>
-          🎁 מימוש פרס
-        </button>
-        <button type="button" className="btn btn--secondary" onClick={() => navigate({ screen: "weeklySummary" })}>
-          📅 סיכום שבועי
+          <Shield size={18} /> רישום אירוע אדום
         </button>
       </section>
 
@@ -123,40 +102,11 @@ export function HomeScreen({ navigate }: HomeScreenProps) {
                 now,
                 child.starsResetAt
               );
-              return (
-                <ChildCard
-                  key={child.id}
-                  child={child}
-                  bronzeEarnedToday={state.bronze.earned}
-                  bronzeTarget={state.bronze.target}
-                  onClick={() => navigate({ screen: "child", childId: child.id })}
-                />
-              );
+              return <ChildCard key={child.id} child={child} config={settings.economyConfig} state={state} />;
             })}
           </div>
         )}
       </section>
-
-      {pickingChildFor && (
-        <Modal title="בחרי ילדה" onClose={() => setPickingChildFor(null)}>
-          <div className="home-screen__child-picker">
-            {activeChildren.map((child) => (
-              <button
-                key={child.id}
-                type="button"
-                className="home-screen__child-picker-row"
-                onClick={() => {
-                  setPickingChildFor(null);
-                  navigate({ screen: "child", childId: child.id });
-                }}
-              >
-                <ChildAvatar icon={child.icon} color={child.color} size="sm" />
-                <span>{child.displayName}</span>
-              </button>
-            ))}
-          </div>
-        </Modal>
-      )}
     </div>
   );
 }

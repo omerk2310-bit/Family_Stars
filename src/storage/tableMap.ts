@@ -92,6 +92,7 @@ const starEventConfig: TableConfig<StarEvent> = {
     note: e.note ?? null,
     created_at: e.createdAt,
     is_gold_star: e.isGoldStar,
+    status: e.status,
   }),
   fromRow: (r) => ({
     id: r.id as string,
@@ -101,6 +102,7 @@ const starEventConfig: TableConfig<StarEvent> = {
     note: (r.note as string | null) ?? undefined,
     createdAt: r.created_at as string,
     isGoldStar: (r.is_gold_star as boolean) ?? false,
+    status: (r.status as StarEvent["status"]) ?? "approved",
   }),
 };
 
