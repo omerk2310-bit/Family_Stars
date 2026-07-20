@@ -6,6 +6,8 @@ import { generateId } from "../../utils/id";
 import { formatHebrewDateTime } from "../../utils/format";
 import { stripNonDigits } from "../../utils/numericInput";
 import { ConfirmDialog } from "../../components/shared/ConfirmDialog";
+import { getEconomyStateForChild } from "../../economy/economySelectors";
+import type { TierState } from "../../economy/types";
 
 const PIN_LENGTH = 4;
 
@@ -28,6 +30,26 @@ export function AdminSettings() {
     .filter((e) => e.behaviorId === ADMIN_CORRECTION_BEHAVIOR_ID)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .slice(0, 10);
+
+  // The capped tier (bronze) is the only one a raw StarEvent maps into
+  // (economySelectors.ts always assigns tierId:"bronze"), so it's the only
+  // tier a manual correction can push out of bounds — resolved generically
+  // rather than hardcoded, same as RestrictedChildScreen.tsx.
+  const cappedTierId = settings.economyConfig.tiers.find(
+    (t) => t.source.type === "behavior" && t.capped
+  )?.id;
+  const cappedStateByChildId: Record<string, TierState | undefined> = {};
+  for (const child of activeChildren) {
+    const state = getEconomyStateForChild(
+      child.id,
+      starEvents,
+      settings.economyStartsAt,
+      settings.economyConfig,
+      new Date(),
+      child.starsResetAt
+    );
+    cappedStateByChildId[child.id] = cappedTierId ? state[cappedTierId] : undefined;
+  }
 
   return (
     <div className="settings-form">
@@ -52,6 +74,7 @@ export function AdminSettings() {
 
       <AdjustmentTool
         children={activeChildren}
+        cappedStateByChildId={cappedStateByChildId}
         onApply={(childId, amount, note) => {
           addStarEvent({
             id: generateId(),
@@ -262,22 +285,31 @@ export function UnlockForm({ expectedPin, onUnlock }: { expectedPin: string; onU
 
 interface AdjustmentToolProps {
   children: Child[];
+  cappedStateByChildId: Record<string, TierState | undefined>;
   onApply: (childId: string, amount: number, note?: string) => void;
 }
 
-function AdjustmentTool({ children, onApply }: AdjustmentToolProps) {
+function AdjustmentTool({ children, cappedStateByChildId, onApply }: AdjustmentToolProps) {
   const [childId, setChildId] = useState(children.length === 1 ? children[0].id : "");
   const [subtract, setSubtract] = useState(false);
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [saved, setSaved] = useState(false);
 
+  const cappedState = cappedStateByChildId[childId];
+  const currentEarned = cappedState?.earned ?? 0;
+  const target = cappedState?.target ?? Infinity;
+  const maxAddable = Math.max(0, target - currentEarned);
+  const maxSubtractable = Math.max(0, currentEarned);
+
   const magnitude = Number(amount);
-  const canApply = childId !== "" && amount.trim() !== "" && !Number.isNaN(magnitude) && magnitude > 0;
+  const clampedMagnitude = Math.min(magnitude || 0, subtract ? maxSubtractable : maxAddable);
+  const canApply =
+    childId !== "" && amount.trim() !== "" && !Number.isNaN(magnitude) && magnitude > 0 && clampedMagnitude > 0;
 
   function handleApply() {
     if (!canApply) return;
-    onApply(childId, subtract ? -magnitude : magnitude, note.trim() || undefined);
+    onApply(childId, subtract ? -clampedMagnitude : clampedMagnitude, note.trim() || undefined);
     setAmount("");
     setNote("");
     setSaved(true);
@@ -287,7 +319,8 @@ function AdjustmentTool({ children, onApply }: AdjustmentToolProps) {
   return (
     <div className="settings-form">
       <p className="settings-form__hint">
-        תיקון ידני בכוכבים של ילדה — נוסף מיידית כארד, לא כפוף ליעד היומי ואינו קשור להתנהגות מסוימת.
+        תיקון ידני בכוכבים של ילדה — נוסף מיידית כארד ואינו קשור להתנהגות מסוימת. התיקון כפוף ליעד היומי: לא ניתן
+        לרדת מתחת ל-0 ולא לחרוג מהתקרה היומית.
       </p>
       <div className="form-field">
         <label htmlFor="admin-adjust-child">עבור מי?</label>
@@ -331,6 +364,11 @@ function AdjustmentTool({ children, onApply }: AdjustmentToolProps) {
           onChange={(e) => setAmount(stripNonDigits(e.target.value))}
           placeholder="לדוגמה: 5"
         />
+        {childId !== "" && (
+          <p className="settings-form__hint">
+            {subtract ? `ניתן להפחית עד ${maxSubtractable} ⭐` : `ניתן להוסיף עד ${maxAddable} ⭐`}
+          </p>
+        )}
       </div>
       <div className="form-field">
         <label htmlFor="admin-adjust-note">הערה (לא חובה)</label>

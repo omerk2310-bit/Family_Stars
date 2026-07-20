@@ -8,7 +8,6 @@ import { AppShell } from "../components/layout/AppShell";
 import { EmptyState } from "../components/layout/EmptyState";
 import { HeartBadge } from "../components/shared/HeartBadge";
 import { BehaviorButton } from "../components/shared/BehaviorButton";
-import { LogStarEventModal } from "../components/modals/LogStarEventModal";
 import { RequestRewardModal } from "../components/modals/RequestRewardModal";
 import { UnlockForm } from "./settings/AdminSettings";
 import { PushOptIn } from "../notifications/PushOptIn";
@@ -40,7 +39,6 @@ export function RestrictedChildScreen({ childId, onResetDevice }: RestrictedChil
     addStarEvent,
   } = useAppData();
   const [activeReward, setActiveReward] = useState<Reward | null>(null);
-  const [activeBehavior, setActiveBehavior] = useState<Behavior | null>(null);
   const [requestedMessage, setRequestedMessage] = useState<string | null>(null);
   const [resettingDevice, setResettingDevice] = useState(false);
 
@@ -88,17 +86,14 @@ export function RestrictedChildScreen({ childId, onResetDevice }: RestrictedChil
     setTimeout(() => setRequestedMessage(null), 3000);
   }
 
-  function handleConfirmBehavior(points: number, note?: string) {
-    if (!activeBehavior) return;
-    setActiveBehavior(null);
-    const requested = Math.min(points, remaining);
+  function handleBehaviorTap(behavior: Behavior) {
+    const requested = Math.min(behavior.points, remaining);
     if (requested <= 0) return;
     addStarEvent({
       id: generateId(),
       childId: child!.id,
-      behaviorId: activeBehavior.id,
+      behaviorId: behavior.id,
       pointsAwarded: requested,
-      note,
       createdAt: new Date().toISOString(),
       isGoldStar: false,
       status: "pending",
@@ -127,7 +122,7 @@ export function RestrictedChildScreen({ childId, onResetDevice }: RestrictedChil
                   key={behavior.id}
                   behavior={behavior}
                   disabled={atCap}
-                  onClick={() => setActiveBehavior(behavior)}
+                  onClick={() => handleBehaviorTap(behavior)}
                 />
               ))}
             </div>
@@ -215,10 +210,6 @@ export function RestrictedChildScreen({ childId, onResetDevice }: RestrictedChil
           onConfirm={handleConfirmRequest}
           onClose={() => setActiveReward(null)}
         />
-      )}
-
-      {activeBehavior && (
-        <LogStarEventModal behavior={activeBehavior} onConfirm={handleConfirmBehavior} onClose={() => setActiveBehavior(null)} />
       )}
 
       {celebratingTier && (

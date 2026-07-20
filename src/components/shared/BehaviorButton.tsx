@@ -8,9 +8,7 @@ interface BehaviorButtonProps {
 }
 
 export function BehaviorButton({ behavior, disabled, onClick }: BehaviorButtonProps) {
-  const pointsLabel = behavior.isBonus
-    ? `${behavior.minPoints ?? behavior.points}–${behavior.maxPoints ?? behavior.points} ⭐`
-    : `${behavior.points} ⭐`;
+  const pointsLabel = `${behavior.points} ⭐`;
 
   return (
     <button type="button" className="behavior-button" disabled={disabled} onClick={onClick}>
