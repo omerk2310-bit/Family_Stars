@@ -61,6 +61,7 @@ export function AdminSettings() {
             note,
             createdAt: new Date().toISOString(),
             isGoldStar: false,
+            status: "approved",
           });
         }}
       />

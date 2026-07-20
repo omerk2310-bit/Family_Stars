@@ -13,7 +13,6 @@ import {
   type DeviceRole,
 } from "./state/deviceRole";
 import { HomeScreen } from "./screens/HomeScreen";
-import { ChildScreen } from "./screens/ChildScreen";
 import { FamilyHeartsScreen } from "./screens/FamilyHeartsScreen";
 import { RedEventsScreen } from "./screens/RedEventsScreen";
 import { RewardsScreen } from "./screens/RewardsScreen";
@@ -37,8 +36,6 @@ function Router() {
           <HomeScreen navigate={setRoute} />
         </AppShell>
       );
-    case "child":
-      return <ChildScreen childId={route.childId} navigate={setRoute} />;
     case "familyHearts":
       return <FamilyHeartsScreen navigate={setRoute} />;
     case "redEvents":

@@ -31,6 +31,8 @@ export interface Behavior {
   isGoldStar?: boolean;
 }
 
+export type StarEventStatus = "pending" | "approved" | "rejected";
+
 export interface StarEvent {
   id: string;
   childId: string;
@@ -39,6 +41,11 @@ export interface StarEvent {
   note?: string;
   createdAt: string;
   isGoldStar: boolean;
+  // Children request stars from their own screen; a parent must approve
+  // (optionally editing pointsAwarded first) before it counts toward tier
+  // progress — see economySelectors.ts's status filter. Legacy/admin-
+  // correction rows without a meaningful pending step default to "approved".
+  status: StarEventStatus;
 }
 
 export interface StarAdjustment {

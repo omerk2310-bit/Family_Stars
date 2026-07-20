@@ -2,7 +2,16 @@ export type TierId = string;
 export type WindowKind = "daily" | "weekly" | "monthly";
 export type RewardSize = "small" | "medium" | "large";
 
-export type TierSource = { type: "behavior" } | { type: "convert"; from: TierId; rate: number };
+// unit controls what a convert tier's `rate` divides: "stars" (default,
+// omit for backward compatibility) divides the upstream tier's raw star
+// total within this tier's own window, exactly as before. "medals" divides
+// a *count of upstream medal completions* instead — how many of the
+// upstream tier's own-kind sub-windows (e.g. days, for a weekly tier
+// converting from a daily one) had that tier's target reached, within this
+// tier's window.
+export type TierSource =
+  | { type: "behavior" }
+  | { type: "convert"; from: TierId; rate: number; unit?: "stars" | "medals" };
 
 export interface TierConfig {
   id: TierId;

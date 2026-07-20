@@ -29,7 +29,12 @@ export function getEconomyEventsForChild(
   childStartsAt?: string
 ): EngineStarEvent[] {
   const effectiveStartsAt = childStartsAt && childStartsAt > economyStartsAt ? childStartsAt : economyStartsAt;
-  return starEvents.filter((e) => e.childId === childId && e.createdAt >= effectiveStartsAt).map(toEngineEvent);
+  // Only approved (or legacy/undefined-status) events count toward tier
+  // progress — a child's pending request doesn't affect the cap or grants
+  // until a parent approves it, and a rejected one never does.
+  return starEvents
+    .filter((e) => e.childId === childId && e.createdAt >= effectiveStartsAt && e.status !== "pending" && e.status !== "rejected")
+    .map(toEngineEvent);
 }
 
 export function getEconomyStateForChild(

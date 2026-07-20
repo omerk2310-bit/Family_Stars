@@ -7,22 +7,19 @@ interface ChildCardProps {
   child: Child;
   bronzeEarnedToday: number;
   bronzeTarget: number;
-  onClick: () => void;
 }
 
-export function ChildCard({ child, bronzeEarnedToday, bronzeTarget, onClick }: ChildCardProps) {
+// Status-only display — no navigation. Star logging is now the child's own
+// action (RestrictedChildScreen), so there's nothing for a parent to "go
+// into" from this card anymore.
+export function ChildCard({ child, bronzeEarnedToday, bronzeTarget }: ChildCardProps) {
   return (
-    <button
-      type="button"
-      className="child-card"
-      style={{ "--child-accent": child.color } as CSSProperties}
-      onClick={onClick}
-    >
+    <div className="child-card" style={{ "--child-accent": child.color } as CSSProperties}>
       <ChildAvatar icon={child.icon} color={child.color} size="lg" />
       <span className="child-card__name">{child.displayName}</span>
       <span className="child-card__today">
         🥉 היום: {bronzeEarnedToday} מתוך {bronzeTarget}
       </span>
-    </button>
+    </div>
   );
 }

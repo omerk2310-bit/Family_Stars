@@ -25,6 +25,21 @@
   margin-bottom: var(--space-3);
 }
 
+.restricted-child-screen__cap-message {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  text-align: center;
+  font-weight: 700;
+}
+
+.restricted-child-screen__behaviors {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
 .restricted-child-screen__rewards {
   display: flex;
   flex-direction: column;

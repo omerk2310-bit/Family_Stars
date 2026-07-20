@@ -20,6 +20,22 @@ function bronzeEvent(childId: string, amount: number, timestamp: string, id: str
 
 const config = DEFAULT_ECONOMY_CONFIG;
 
+// The shipped default config now uses medals-mode conversion for silver/gold
+// (see defaultConfig.ts) — this variant restores the original star-count
+// conversion so the pre-existing "spec's worked examples" tests below keep
+// exercising and pinning down that math as a regression suite, independent
+// of whichever mode the real app defaults to.
+const starModeConfig: EconomyConfig = {
+  ...config,
+  tiers: config.tiers.map((t) =>
+    t.id === "silver"
+      ? { ...t, source: { type: "convert", from: "bronze", rate: 3 }, target: 15 }
+      : t.id === "gold"
+        ? { ...t, source: { type: "convert", from: "silver", rate: 10 }, target: 6 }
+        : t
+  ),
+};
+
 describe("window boundaries", () => {
   it("dailyWindow returns a 1-calendar-day window anchored at dailyAt", () => {
     const now = local(2026, 7, 14, 15, 30);
@@ -87,7 +103,7 @@ describe("computeState — sanity checks from spec", () => {
       bronzeEvent("child1", 1, localIso(2026, 7, 14, 8, i), `e${i}`)
     );
     const now = local(2026, 7, 14, 20, 0);
-    const state = computeState(events, config, now);
+    const state = computeState(events, starModeConfig, now);
 
     expect(state.bronze.earned).toBe(10);
     expect(state.bronze.target).toBe(10);
@@ -105,7 +121,7 @@ describe("computeState — sanity checks from spec", () => {
       bronzeEvent("child1", 1, localIso(2026, 7, 14, 8, i), `e${i}`)
     );
     const now = local(2026, 7, 14, 20, 0);
-    const state = computeState(events, config, now);
+    const state = computeState(events, starModeConfig, now);
 
     expect(state.bronze.earned).toBe(11);
     expect(state.silver.earned).toBe(3);
@@ -120,7 +136,7 @@ describe("computeState — sanity checks from spec", () => {
       ...Array.from({ length: 10 }, (_, i) => bronzeEvent("child1", 1, localIso(2026, 7, 15, 8, i), `d2-${i}`)),
     ];
     const now = local(2026, 7, 15, 20, 0);
-    const state = computeState(events, config, now);
+    const state = computeState(events, starModeConfig, now);
 
     // 21 total bronze this week -> floor(21/3) = 7, remainder 0 (not 2+? "leftover")
     expect(state.silver.earned).toBe(7);
@@ -167,14 +183,14 @@ describe("computeState — sanity checks from spec", () => {
     }
 
     const nowInWeek = local(2026, 8, 1, 20, 0);
-    const state = computeState(events, config, nowInWeek);
+    const state = computeState(events, starModeConfig, nowInWeek);
     expect(state.silver.earned).toBe(15); // floor(45/3) = 15, target reached
     expect(state.silver.targetReachedAt).not.toBeNull();
 
-    const julyState = computeState(events, config, local(2026, 7, 30, 12, 0));
+    const julyState = computeState(events, starModeConfig, local(2026, 7, 30, 12, 0));
     expect(julyState.gold.earned).toBe(1); // floor(floor(36/3)/10) = floor(12/10) = 1
 
-    const augustState = computeState(events, config, local(2026, 8, 1, 20, 0));
+    const augustState = computeState(events, starModeConfig, local(2026, 8, 1, 20, 0));
     expect(augustState.gold.earned).toBe(0); // floor(floor(9/3)/10) = floor(3/10) = 0
   });
 });
@@ -243,5 +259,120 @@ describe("computeGrants", () => {
     const now = local(2026, 7, 20, 12, 0);
     const state = computeState(events, extendedConfig, now);
     expect(state.platinum.earned).toBe(Math.floor(state.gold.earned / 2));
+  });
+});
+
+describe("computeState — medals-based conversion", () => {
+  function bronzeMedalDay(day: number, counter: { n: number }): EngineStarEvent[] {
+    return Array.from({ length: 10 }, (_, i) => bronzeEvent("child1", 1, localIso(2026, 7, day, 8, i), `e${counter.n++}`));
+  }
+  function bronzeShortDay(day: number, stars: number, counter: { n: number }): EngineStarEvent[] {
+    return Array.from({ length: stars }, (_, i) => bronzeEvent("child1", 1, localIso(2026, 7, day, 8, i), `e${counter.n++}`));
+  }
+
+  it("silver counts bronze-medal days within the week, ignoring days that fall short (shipped default config)", () => {
+    const counter = { n: 0 };
+    // Sunday 2026-07-12 .. Saturday 2026-07-18
+    const events = [
+      ...bronzeMedalDay(12, counter),
+      ...bronzeMedalDay(13, counter),
+      ...bronzeMedalDay(14, counter),
+      ...bronzeMedalDay(15, counter),
+      ...bronzeMedalDay(16, counter),
+      ...bronzeShortDay(17, 3, counter), // short day, doesn't earn a bronze medal
+      ...bronzeShortDay(18, 3, counter),
+    ];
+    const now = local(2026, 7, 18, 20, 0);
+    const state = computeState(events, config, now); // config = DEFAULT_ECONOMY_CONFIG (medals mode)
+    expect(state.silver.earned).toBe(5); // 5 medal days, rate 1 -> 5
+    expect(state.silver.targetReachedAt).not.toBeNull(); // target 5
+  });
+
+  it("floor-divides medal count by rate and computes a meaningful remainder", () => {
+    const customConfig: EconomyConfig = {
+      ...config,
+      tiers: config.tiers.map((t) =>
+        t.id === "silver" ? { ...t, source: { type: "convert", from: "bronze", rate: 2, unit: "medals" }, target: 2 } : t
+      ),
+    };
+    const counter = { n: 0 };
+    const events = [
+      ...bronzeMedalDay(12, counter),
+      ...bronzeMedalDay(13, counter),
+      ...bronzeMedalDay(14, counter),
+      ...bronzeMedalDay(15, counter),
+      ...bronzeMedalDay(16, counter), // 5 medal days this week
+    ];
+    const now = local(2026, 7, 18, 20, 0);
+    const state = computeState(events, customConfig, now);
+    expect(state.silver.earned).toBe(2); // floor(5/2) = 2, target reached
+    expect(state.silver.remainder).toBe(1); // 5 % 2 = 1
+    expect(state.silver.targetReachedAt).not.toBeNull();
+  });
+
+  it("a week straddling a month boundary is excluded from gold's medal count on either side", () => {
+    // July 2026: weeks are Jun28-Jul5, Jul5-12, Jul12-19, Jul19-26, Jul26-Aug2
+    // (weekStartsOn=0/Sunday). Only the 3 middle weeks are fully contained in
+    // the July [Jul1,Aug1) monthly window — the boundary weeks are excluded.
+    const counter = { n: 0 };
+    const events: EngineStarEvent[] = [];
+    // 3 fully-contained weeks each earn a silver medal (5 bronze-medal days).
+    for (const weekStart of [5, 12, 19]) {
+      for (let d = 0; d < 5; d++) {
+        events.push(...bronzeMedalDay(weekStart + d, counter));
+      }
+    }
+    // The straddling week (Jul26-Aug2) ALSO earns a silver medal (5 medal
+    // days inside July's portion of that week: Jul26-30).
+    for (let d = 26; d <= 30; d++) {
+      events.push(...bronzeMedalDay(d, counter));
+    }
+
+    const julyState = computeState(events, config, local(2026, 7, 20, 12, 0));
+    expect(julyState.gold.earned).toBe(3); // only the 3 fully-contained weeks count
+    expect(julyState.gold.targetReachedAt).not.toBeNull(); // target 3, reached
+
+    // The straddling week's own silver medal is still real when viewed from
+    // inside that week — it just doesn't feed July's (or August's) gold.
+    const straddlingWeekState = computeState(events, config, local(2026, 7, 28, 12, 0));
+    expect(straddlingWeekState.silver.earned).toBe(5);
+  });
+
+  it("chain-agnostic in medals mode too: a hypothetical 4th tier converting from gold by medals", () => {
+    const extendedConfig: EconomyConfig = {
+      ...config,
+      tiers: [
+        ...config.tiers,
+        {
+          id: "platinum",
+          label: "פלטינה",
+          icon: "💎",
+          color: "#e5e4e2",
+          source: { type: "convert", from: "gold", rate: 1, unit: "medals" },
+          window: "monthly",
+          target: 1,
+          reward: "large",
+          capped: false,
+          consumesSource: false,
+          rolloverRemainder: false,
+          order: 3,
+        },
+      ],
+    };
+    const counter = { n: 0 };
+    const events: EngineStarEvent[] = [];
+    for (const weekStart of [5, 12, 19]) {
+      for (let d = 0; d < 5; d++) {
+        events.push(...bronzeMedalDay(weekStart + d, counter));
+      }
+    }
+    const state = computeState(events, extendedConfig, local(2026, 7, 20, 12, 0));
+    expect(state.gold.earned).toBe(3);
+    // platinum's own window is monthly too, same as gold's — a monthly tier
+    // converting "by medals" from another monthly tier has no sub-windows to
+    // walk (they're the same window kind/size), so this exercises that the
+    // recursion still terminates sanely rather than asserting a specific
+    // platinum number.
+    expect(Number.isNaN(state.platinum.earned)).toBe(false);
   });
 });

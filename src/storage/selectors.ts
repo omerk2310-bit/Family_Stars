@@ -112,9 +112,15 @@ export function getPendingRewardRedemptions(rewardRedemptions: RewardRedemption[
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
 
+export function getPendingStarEvents(starEvents: StarEvent[]): StarEvent[] {
+  return starEvents.filter((e) => e.status === "pending").sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+
 export function getThisWeekEventsForChild(childId: string, starEvents: StarEvent[], reference: Date): StarEvent[] {
   const { start, end } = getWeekRange(reference);
-  return starEvents.filter((e) => e.childId === childId && isWithinRange(e.createdAt, start, end));
+  return starEvents.filter(
+    (e) => e.childId === childId && isWithinRange(e.createdAt, start, end) && e.status !== "pending" && e.status !== "rejected"
+  );
 }
 
 export function getThisWeekHeartEvents(heartEvents: HeartEvent[], reference: Date): HeartEvent[] {
