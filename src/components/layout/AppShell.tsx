@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import { ArrowRight, Settings } from "lucide-react";
 import "./AppShell.css";
 
 interface AppShellProps {
@@ -17,7 +18,7 @@ export function AppShell({ title, subtitle, onBack, onSettings, accent, children
         <div className="app-shell__header-start">
           {onBack && (
             <button type="button" className="app-shell__icon-btn" onClick={onBack} aria-label="חזרה">
-              →
+              <ArrowRight size={20} />
             </button>
           )}
         </div>
@@ -28,7 +29,7 @@ export function AppShell({ title, subtitle, onBack, onSettings, accent, children
         <div className="app-shell__header-end">
           {onSettings && (
             <button type="button" className="app-shell__icon-btn" onClick={onSettings} aria-label="הגדרות">
-              ⚙️
+              <Settings size={20} />
             </button>
           )}
         </div>

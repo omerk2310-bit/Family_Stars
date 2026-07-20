@@ -44,6 +44,8 @@
 
   --shadow-card: 0 2px 12px rgba(44, 37, 64, 0.08);
   --shadow-modal: 0 12px 40px rgba(44, 37, 64, 0.25);
+  --shadow-raised: 0 8px 24px rgba(44, 37, 64, 0.14);
+  --shadow-nav: 0 -4px 20px rgba(44, 37, 64, 0.1);
 
   --child-accent: var(--color-primary);
 }

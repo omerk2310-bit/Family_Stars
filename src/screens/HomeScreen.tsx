@@ -1,3 +1,4 @@
+import { ClipboardList, Gift, Heart, Shield } from "lucide-react";
 import { useAppData } from "../state/AppDataContext";
 import { useToday } from "../hooks/useToday";
 import type { Route } from "../types/routes";
@@ -57,7 +58,7 @@ export function HomeScreen({ navigate }: HomeScreenProps) {
         className={`btn ${pendingCount > 0 ? "btn--amber" : "btn--secondary"} home-screen__approvals-btn`}
         onClick={() => navigate({ screen: "pendingApprovals" })}
       >
-        📋 בקשות ממתינות{pendingCount > 0 ? ` (${pendingCount})` : ""}
+        <ClipboardList size={18} /> בקשות ממתינות{pendingCount > 0 ? ` (${pendingCount})` : ""}
       </button>
 
       <button
@@ -65,21 +66,15 @@ export function HomeScreen({ navigate }: HomeScreenProps) {
         className={`btn ${pendingGrantsCount > 0 ? "btn--amber" : "btn--secondary"} home-screen__approvals-btn`}
         onClick={() => navigate({ screen: "instantRewardsGrants" })}
       >
-        🎁 מתנות לחלוקה{pendingGrantsCount > 0 ? ` (${pendingGrantsCount})` : ""}
+        <Gift size={18} /> מתנות לחלוקה{pendingGrantsCount > 0 ? ` (${pendingGrantsCount})` : ""}
       </button>
 
       <section className="home-screen__actions">
         <button type="button" className="btn btn--secondary" onClick={() => navigate({ screen: "familyHearts" })}>
-          💗 הוספת לב משפחתי
+          <Heart size={18} /> הוספת לב משפחתי
         </button>
         <button type="button" className="btn btn--amber" onClick={() => navigate({ screen: "redEvents" })}>
-          🛡️ רישום אירוע אדום
-        </button>
-        <button type="button" className="btn btn--secondary" onClick={() => navigate({ screen: "rewards" })}>
-          🎁 מימוש פרס
-        </button>
-        <button type="button" className="btn btn--secondary" onClick={() => navigate({ screen: "weeklySummary" })}>
-          📅 סיכום שבועי
+          <Shield size={18} /> רישום אירוע אדום
         </button>
       </section>
 
@@ -107,14 +102,7 @@ export function HomeScreen({ navigate }: HomeScreenProps) {
                 now,
                 child.starsResetAt
               );
-              return (
-                <ChildCard
-                  key={child.id}
-                  child={child}
-                  bronzeEarnedToday={state.bronze.earned}
-                  bronzeTarget={state.bronze.target}
-                />
-              );
+              return <ChildCard key={child.id} child={child} config={settings.economyConfig} state={state} />;
             })}
           </div>
         )}

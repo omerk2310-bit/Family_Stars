@@ -21,14 +21,3 @@
   font-weight: 700;
   color: var(--color-text);
 }
-
-.child-card__stars {
-  font-size: var(--font-size-md);
-  color: var(--color-star-contrast);
-  font-weight: 600;
-}
-
-.child-card__today {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-}

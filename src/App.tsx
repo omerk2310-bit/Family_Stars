@@ -25,10 +25,14 @@ import { RoleSelectorScreen } from "./screens/RoleSelectorScreen";
 import { RestrictedChildScreen } from "./screens/RestrictedChildScreen";
 import { InstantRewardsMigrationScreen } from "./screens/InstantRewardsMigrationScreen";
 import { AppShell } from "./components/layout/AppShell";
+import { BottomNav } from "./components/layout/BottomNav";
 
-function Router() {
-  const [route, setRoute] = useState<Route>({ screen: "home" });
+interface RouterProps {
+  route: Route;
+  setRoute: (route: Route) => void;
+}
 
+function Router({ route, setRoute }: RouterProps) {
   switch (route.screen) {
     case "home":
       return (
@@ -57,6 +61,7 @@ function Router() {
 
 function DeviceRoleGate() {
   const { children, settings } = useAppData();
+  const [route, setRoute] = useState<Route>({ screen: "home" });
   const [role, setRole] = useState<DeviceRole>(() => {
     const deepLink = parseDeepLinkRole(window.location.search);
     if (deepLink) {
@@ -110,10 +115,11 @@ function DeviceRoleGate() {
     }
     return (
       <div className="device-role-gate__parent-wrapper">
-        <Router />
+        <Router route={route} setRoute={setRoute} />
         <button type="button" className="device-role-gate__switch-user" onClick={resetDevice}>
           🔄 החלפת משתמש
         </button>
+        <BottomNav route={route} navigate={setRoute} />
       </div>
     );
   }
